@@ -1,0 +1,290 @@
+@import url('https://fonts.cdnfonts.com/css/brigends-expanded');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer utilities {
+  .font-brigends {
+    font-family: 'Brigends Expanded', 'Brigends', 'Syne', 'Orbitron', 'Montserrat', sans-serif;
+  }
+}
+
+html {
+  transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Mode Full Palette Engine */
+html.dark {
+  color-scheme: dark;
+  background-color: #0b1329;
+}
+
+html.dark body {
+  background-color: #0b1329;
+  color: #f1f5f9;
+}
+
+/* Custom modern scrollbar for dark mode */
+html.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html.dark ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Containers, Cards, Modals and Drawers in Dark Palette */
+html.dark .bg-white {
+  background-color: #1e293b !important;
+}
+
+html.dark .bg-slate-50 {
+  background-color: #0f172a !important;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+
+html.dark .bg-slate-200 {
+  background-color: #334155 !important;
+}
+
+/* Borders in Dark Palette */
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-300 {
+  border-color: #334155 !important;
+}
+
+/* Brand Blue and Hero Gradients Transformation for Dark Palette */
+html.dark .bg-gradient-to-r.from-\[\#005BAC\].to-\[\#013780\],
+html.dark .bg-gradient-to-r.from-\[\#005BAC\].via-\[\#013780\].to-\[\#004e96\],
+html.dark .from-\[\#005BAC\].to-\[\#013780\] {
+  background-image: linear-gradient(135deg, #0b172e 0%, #112648 50%, #0e3766 100%) !important;
+  border-color: rgba(56, 189, 248, 0.25) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark .bg-\[\#004e96\] {
+  background-color: #0b1f3a !important;
+  border-color: rgba(56, 189, 248, 0.25) !important;
+}
+
+html.dark .bg-\[\#012b66\] {
+  background-color: #07152b !important;
+}
+
+/* Typography & Brand Colors in Dark Palette */
+html.dark .text-slate-800,
+html.dark .text-slate-900,
+html.dark .text-slate-700,
+html.dark .text-blue-950,
+html.dark .text-slate-950 {
+  color: #f1f5f9 !important;
+}
+
+/* Explicit high-contrast text protection on bright backgrounds (buttons, avatar, pills) */
+html.dark .bg-sky-400,
+html.dark .bg-sky-400 *,
+html.dark .bg-sky-300,
+html.dark .bg-sky-300 *,
+html.dark .bg-amber-400,
+html.dark .bg-amber-400 *,
+html.dark .bg-amber-300,
+html.dark .bg-amber-300 *,
+html.dark .bg-yellow-400,
+html.dark .bg-yellow-400 *,
+html.dark .text-\[\#021631\] {
+  color: #021631 !important;
+}
+
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Electric Brand Sky and Green in Dark Mode */
+html.dark .text-\[\#005BAC\],
+html.dark .text-\[\#013780\],
+html.dark .text-\[\#012b66\] {
+  color: #38bdf8 !important;
+}
+
+html.dark .text-\[\#78BC61\] {
+  color: #4ade80 !important;
+}
+
+html.dark .bg-\[\#005BAC\] {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+html.dark .bg-\[\#78BC61\] {
+  background-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+html.dark .border-\[\#005BAC\],
+html.dark .border-\[\#013780\],
+html.dark .border-\[\#012b66\] {
+  border-color: rgba(56, 189, 248, 0.35) !important;
+}
+
+/* Soft Color Pill & Tag Badges in Dark Palette */
+html.dark .bg-blue-50,
+html.dark .bg-blue-50\/40,
+html.dark .bg-blue-50\/60,
+html.dark .bg-sky-50,
+html.dark .bg-sky-100 {
+  background-color: rgba(14, 165, 233, 0.14) !important;
+  border-color: rgba(56, 189, 248, 0.25) !important;
+  color: #7dd3fc !important;
+}
+
+html.dark .text-blue-700,
+html.dark .text-sky-700 {
+  color: #7dd3fc !important;
+}
+
+html.dark .border-blue-100,
+html.dark .border-blue-200,
+html.dark .border-sky-100,
+html.dark .border-sky-200 {
+  border-color: rgba(56, 189, 248, 0.22) !important;
+}
+
+/* Amber / Orange / ODS Palettes in Dark Mode */
+html.dark .bg-orange-50,
+html.dark .bg-orange-50\/60,
+html.dark .bg-amber-50,
+html.dark .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.14) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+  color: #fcd34d !important;
+}
+
+html.dark .border-orange-100,
+html.dark .border-orange-200,
+html.dark .border-amber-100,
+html.dark .border-amber-200 {
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+
+html.dark .bg-orange-800 {
+  background-color: #b45309 !important;
+  color: #ffffff !important;
+  border-color: #f59e0b !important;
+}
+
+/* Emerald / Green / Trilhas Palettes in Dark Mode */
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-50\/60,
+html.dark .bg-green-50,
+html.dark .bg-green-100 {
+  background-color: rgba(16, 185, 129, 0.14) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+  color: #6ee7b7 !important;
+}
+
+html.dark .border-emerald-100,
+html.dark .border-emerald-200,
+html.dark .border-green-100,
+html.dark .border-green-200 {
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+html.dark .bg-emerald-800 {
+  background-color: #047857 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+}
+
+/* Purple / Indigo Palettes in Dark Mode */
+html.dark .bg-purple-50,
+html.dark .bg-purple-100,
+html.dark .bg-indigo-50,
+html.dark .bg-indigo-100 {
+  background-color: rgba(139, 92, 246, 0.14) !important;
+  border-color: rgba(139, 92, 246, 0.25) !important;
+  color: #c4b5fd !important;
+}
+
+html.dark .border-purple-100,
+html.dark .border-purple-200,
+html.dark .border-indigo-100,
+html.dark .border-indigo-200 {
+  border-color: rgba(139, 92, 246, 0.25) !important;
+}
+
+/* Inputs, Selects & Textareas in Dark Palette */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+  border-color: #38bdf8 !important;
+  background-color: #1e293b !important;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25) !important;
+}
+
+html.dark option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+/* Shadows in Dark Palette */
+html.dark .shadow-sm {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .shadow-md,
+html.dark .shadow-lg,
+html.dark .shadow-xl,
+html.dark .shadow-2xl {
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* High-contrast Print Mode Override (always clean light paper for official documents) */
+@media print {
+  html,
+  html.dark,
+  body {
+    color-scheme: light !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  html.dark .bg-white {
+    background-color: #ffffff !important;
+  }
+  html.dark .text-slate-800,
+  html.dark .text-slate-900,
+  html.dark .text-slate-700,
+  html.dark .text-\[\#005BAC\] {
+    color: #000000 !important;
+  }
+}
+

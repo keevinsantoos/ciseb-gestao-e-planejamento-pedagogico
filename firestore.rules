@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isNonEmptyString(val) {
+      return val is string && val.size() > 0;
+    }
+
+    // Plans collection validation & rules
+    match /plans/{planId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.id is string
+                            && request.resource.data.unidadeCiseb is string
+                            && request.resource.data.professorFormador is string;
+      allow delete: if isAuthenticated() || true;
+    }
+
+    // Accounts collection validation & rules
+    // Passwords MUST NEVER be stored in Firestore!
+    match /accounts/{accountId} {
+      // Allow read so client can list units and match institutional profile
+      allow read: if true;
+      
+      // Prohibit saving plaintext passwords in Firestore
+      allow create, update: if !('senha' in request.resource.data)
+                            && request.resource.data.id is string
+                            && request.resource.data.nome is string
+                            && request.resource.data.email is string;
+      
+      allow delete: if isAuthenticated();
+    }
+
+    // Default catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "Plan": {
+      "title": "Plan",
+      "description": "Plano de Atendimento e Suporte de Prototipagem do CISEB",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "modalidade": { "type": "string" },
+        "unidadeCiseb": { "type": "string" },
+        "professorFormador": { "type": "string" },
+        "temaImersao": { "type": "string" },
+        "tituloSuporte": { "type": "string" },
+        "cargaHorariaAulas": { "type": "string" },
+        "turmaParticipante": { "type": "string" },
+        "bnccCompetencias": { "type": "array", "items": { "type": "string" } },
+        "bnccHabilidadesEixo": { "type": "array", "items": { "type": "string" } },
+        "odsAplicada": { "type": "array", "items": { "type": "string" } },
+        "trilhaImersao": { "type": "string" },
+        "fase1Empatia": { "type": "string" },
+        "fase2TempestadeIdeias": { "type": "string" },
+        "fase3PrototipagemSolucao": { "type": "string" },
+        "tipoPrototipo": { "type": "string" },
+        "recursosDidaticosTecnologicos": { "type": "string" },
+        "roteiroPedagógico": { "type": "string" },
+        "expectativaAprendizagem": { "type": "string" },
+        "publicoAlvoDetalhamento": { "type": "string" },
+        "observacoes": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "authorEmail": { "type": "string" },
+        "authorNome": { "type": "string" }
+      },
+      "required": ["id", "unidadeCiseb", "professorFormador", "updatedAt"]
+    },
+    "Account": {
+      "title": "Account",
+      "description": "Conta de Professor Formador ou Equipe de Monitoramento CISEB",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "nome": { "type": "string" },
+        "unidadeCiseb": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "status": { "type": "string" },
+        "mustChangePassword": { "type": "boolean" },
+        "cadastradoPor": { "type": "string" },
+        "dataCadastro": { "type": "string" }
+      },
+      "required": ["id", "nome", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/plans/{planId}": {
+      "schema": "Plan",
+      "description": "Coleção de planos de atendimento pedagógico do CISEB"
+    },
+    "/accounts/{accountId}": {
+      "schema": "Account",
+      "description": "Coleção de contas e perfis públicos institucionais do CISEB (sem senhas)"
+    }
+  }
+}
