@@ -190,7 +190,7 @@ export default function CisebThemesCarousel3D() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [webglSupported, setWebglSupported] = useState(true);
+  const [webglSupported, setWebglSupported] = useState(false); // Force false to remove canvas
   const [fallbackRotationDeg, setFallbackRotationDeg] = useState(0);
 
   const currentTheme = CISEB_THEMES[currentIndex];

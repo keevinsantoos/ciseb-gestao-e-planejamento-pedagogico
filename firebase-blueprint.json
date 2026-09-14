@@ -42,15 +42,37 @@
         "id": { "type": "string" },
         "uid": { "type": "string" },
         "nome": { "type": "string" },
+        "escolaId": { "type": "string" },
+        "escolaNome": { "type": "string" },
         "unidadeCiseb": { "type": "string" },
         "email": { "type": "string" },
         "role": { "type": "string" },
         "status": { "type": "string" },
-        "mustChangePassword": { "type": "boolean" },
         "cadastradoPor": { "type": "string" },
-        "dataCadastro": { "type": "string" }
+        "dataCadastro": { "type": "string" },
+        "criadoPor": { "type": "string" },
+        "criadoEm": { "type": "string" },
+        "atualizadoPor": { "type": "string" },
+        "atualizadoEm": { "type": "string" }
       },
-      "required": ["id", "nome", "email", "role"]
+      "required": ["id", "nome", "email", "role", "escolaId"]
+    },
+    "Escola": {
+      "title": "Escola",
+      "description": "Unidade Escolar Oficial Integrada ao CISEB / SEDUC-PA",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "codigo": { "type": "string" },
+        "nome": { "type": "string" },
+        "municipio": { "type": "string" },
+        "status": { "type": "string" },
+        "criadoPor": { "type": "string" },
+        "criadoEm": { "type": "string" },
+        "atualizadoPor": { "type": "string" },
+        "atualizadoEm": { "type": "string" }
+      },
+      "required": ["id", "nome", "municipio", "status"]
     },
     "Pergunta": {
       "title": "Pergunta",
@@ -67,6 +89,10 @@
     }
   },
   "firestore": {
+    "/escolas/{escolaId}": {
+      "schema": "Escola",
+      "description": "Coleção canônica de Unidades Escolares Oficiais CISEB / SEDUC-PA"
+    },
     "/plans/{planId}": {
       "schema": "Plan",
       "description": "Coleção de planos de atendimento pedagógico do CISEB"

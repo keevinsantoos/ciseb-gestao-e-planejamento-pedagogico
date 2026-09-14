@@ -12,17 +12,19 @@ export const CisebLogo: React.FC<CisebLogoProps> = ({
   const isLight = variant === 'light';
 
   // Dynamic color palette tailored for contrast and elegance
-  const strokeColor = isLight ? '#38BDF8' : '#000000';
-  const subtitleColor = isLight ? '#E0F2FE' : '#000000';
-  const starColor = isLight ? '#BAE6FD' : '#000000';
-  const dividerColor = isLight ? 'rgba(186, 230, 253, 0.6)' : 'rgba(0, 0, 0, 0.75)';
+  // isLight means the logo itself is light (for dark backgrounds).
+  // !isLight (dark variant) means the logo itself is dark (for light backgrounds).
+  const strokeColor = isLight ? '#00aaff' : '#005BAC';
+  const subtitleColor = isLight ? '#E0F2FE' : '#005BAC';
+  const starColor = isLight ? '#005BAC' : '#00aaff';
+  const dividerColor = isLight ? 'rgba(0, 170, 255, 0.6)' : 'rgba(0, 91, 172, 0.75)'; // #005BAC with opacity
 
   const brigendsFont = "'Brigends Expanded', 'Brigends', 'Syne', 'Orbitron', 'Montserrat', sans-serif";
   const arialFont = "Arial, Helvetica, sans-serif";
 
   const gradId = `cisebTextGrad_${variant}`;
   const glowId = `cisebLogoGlow_${variant}`;
-  const textColor = isLight ? `url(#${gradId})` : '#000000';
+  const textColor = isLight ? `url(#${gradId})` : '#005BAC';
 
   return (
     <svg
@@ -41,14 +43,14 @@ export const CisebLogo: React.FC<CisebLogoProps> = ({
                 dx="0"
                 dy="2"
                 stdDeviation="2.5"
-                floodColor="#0284C7"
+                floodColor="#005BAC"
                 floodOpacity="0.45"
               />
             </filter>
 
             <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="#FFFFFF" />
-              <stop offset="100%" stopColor="#F0F9FF" />
+              <stop offset="100%" stopColor="#cceeff" />
             </linearGradient>
           </>
         )}

@@ -16,7 +16,9 @@ import { AiCopilotDrawer } from './components/AiCopilotDrawer';
 import { CurriculumGuideModal } from './components/CurriculumGuideModal';
 import { HistoryDrawer } from './components/HistoryDrawer';
 import { LoginScreen } from './components/LoginScreen';
+import { Hub } from './components/hub/Hub';
 import { MonitoringDashboard } from './components/MonitoringDashboard';
+import { AdminManagementPanel } from './components/admin/AdminManagementPanel';
 import { AccountManagerModal } from './components/AccountManagerModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { UnitSelectorModal } from './components/UnitSelectorModal';
@@ -69,7 +71,7 @@ export default function App() {
     createEmptyPlan(currentUser)
   );
   const [savedPlans, setSavedPlans] = useState<CisebSessionPlan[]>([]);
-  const [activeView, setActiveView] = useState<'edit' | 'report' | 'monitoring'>(authHookUser?.role === 'monitoramento' ? 'monitoring' : 'edit');
+  const [activeView, setActiveView] = useState<'hub' | 'edit' | 'report' | 'monitoring' | 'admin'>('hub');
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
       const stored = localStorage.getItem(THEME_STORAGE_KEY);
@@ -140,11 +142,7 @@ export default function App() {
 
   const handleLogin = (user: AuthUser) => {
     setCurrentUser(user);
-    if (user.role === 'monitoramento') {
-      setActiveView('monitoring');
-    } else {
-      setActiveView('edit');
-    }
+    setActiveView('hub');
     // Auto-update formador, unit, and author tracking if current plan is blank
     setCurrentPlan((prev) => ({
       ...prev,
@@ -159,6 +157,7 @@ export default function App() {
   const handleLogout = async () => {
     await logout();
     setCurrentUser(null);
+    setActiveView('hub');
   };
 
 
@@ -335,9 +334,16 @@ export default function App() {
         onOpenHistory={() => setIsHistoryOpen(true)}
         onToggleAiDrawer={() => setIsAiDrawerOpen(!isAiDrawerOpen)}
         onOpenPrint={() => setActiveView('report')}
-        onOpenAccountsModal={() => setIsAccountsModalOpen(true)}
+        onOpenAccountsModal={() => {
+          if (currentUser?.role === 'monitoramento') {
+            setActiveView('admin');
+          } else {
+            setIsAccountsModalOpen(true);
+          }
+        }}
         onOpenUnitModal={() => setIsUnitModalOpen(true)}
         onChangePassword={() => setIsChangePasswordOpen(true)}
+        onBackToHub={() => setActiveView('hub')}
         activeView={activeView}
         setActiveView={setActiveView}
         savedCount={userSavedPlans.length}
@@ -351,8 +357,19 @@ export default function App() {
       />
 
       {/* Main View Area */}
-      <main className="flex-1 pb-16 print:pb-0 print:m-0">
-        {activeView === 'monitoring' ? (
+      <main className="flex-1 pb-16 print:pb-0 print:m-0 flex flex-col">
+        {activeView === 'hub' ? (
+          <Hub
+            currentUser={currentUser}
+            onSelectTool={(tool) => setActiveView(tool)}
+          />
+        ) : activeView === 'admin' && currentUser?.role === 'monitoramento' ? (
+          <AdminManagementPanel
+            currentUser={currentUser}
+            onBackToEdit={() => setActiveView('hub')}
+            theme={theme}
+          />
+        ) : activeView === 'monitoring' ? (
           <MonitoringDashboard
             user={currentUser}
             onLogout={handleLogout}
@@ -440,35 +457,39 @@ export default function App() {
 
 
       {/* Floating Question & Pedagogical Support Box (MorphSurface) */}
-      <QuestionBox
-        currentUser={currentUser}
-        className="fixed bottom-6 left-6 z-40 print:hidden"
-      />
+      {activeView !== 'hub' && (
+        <QuestionBox
+          currentUser={currentUser}
+          className="fixed bottom-6 left-6 z-40 print:hidden"
+        />
+      )}
 
       {/* Floating MAG AI Assistant Button at the Bottom (External Link) */}
-      <button
-        type="button"
-        onClick={() => window.open(DEFAULT_MAG_EXTERNAL_URL, '_blank', 'noopener,noreferrer')}
-        className="fixed bottom-6 right-6 z-40 group pl-2 pr-4 py-2 rounded-2xl bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 text-[#005BAC] dark:text-sky-300 font-black text-xs uppercase shadow-2xl shadow-slate-900/30 dark:shadow-black/50 hover:shadow-[0_0_28px_rgba(0,91,172,0.45)] hover:-translate-y-1 active:translate-y-0 transition-all duration-300 flex items-center gap-3 cursor-pointer border border-[#005BAC]/20 dark:border-sky-500/30 ring-4 ring-[#005BAC]/10 dark:ring-sky-400/10 animate-in fade-in slide-in-from-bottom-4 print:hidden"
-        title="Abrir a MAG (Assistente Pedagógica com IA) em nova aba"
-        aria-label="Abrir a MAG Mentora Pedagógica em nova aba"
-      >
-        <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border-2 border-[#005BAC]/30 dark:border-sky-400/40 shadow-sm relative z-10 bg-sky-100 dark:bg-slate-700 ring-2 ring-white dark:ring-slate-800">
-          <img
-            src={magAvatar}
-            alt="Avatar MAG"
-            className="w-full h-full object-cover object-top scale-110 group-hover:scale-125 transition-transform duration-300"
-            referrerPolicy="no-referrer"
-          />
-        </div>
-        <div className="text-left">
-          <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-bold normal-case tracking-normal -mb-0.5 flex items-center gap-1">
-            Assistente IA <ExternalLink className="w-2.5 h-2.5 opacity-60" />
-          </span>
-          <span className="tracking-tight text-xs font-black text-[#005BAC] dark:text-sky-300">Conheça a MAG</span>
-        </div>
-        <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400 animate-pulse shrink-0 ml-0.5" />
-      </button>
+      {activeView !== 'hub' && (
+        <button
+          type="button"
+          onClick={() => window.open(DEFAULT_MAG_EXTERNAL_URL, '_blank', 'noopener,noreferrer')}
+          className="fixed bottom-6 right-6 z-40 group pl-2 pr-4 py-2 rounded-2xl bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 text-[#005BAC] dark:text-sky-300 font-black text-xs uppercase shadow-2xl shadow-slate-900/30 dark:shadow-black/50 hover:shadow-[0_0_28px_rgba(0,91,172,0.45)] hover:-translate-y-1 active:translate-y-0 transition-all duration-300 flex items-center gap-3 cursor-pointer border border-[#005BAC]/20 dark:border-sky-500/30 ring-4 ring-[#005BAC]/10 dark:ring-sky-400/10 animate-in fade-in slide-in-from-bottom-4 print:hidden"
+          title="Abrir a MAG (Assistente Pedagógica com IA) em nova aba"
+          aria-label="Abrir a MAG Mentora Pedagógica em nova aba"
+        >
+          <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border-2 border-[#005BAC]/30 dark:border-sky-400/40 shadow-sm relative z-10 bg-sky-100 dark:bg-slate-700 ring-2 ring-white dark:ring-slate-800">
+            <img
+              src={magAvatar}
+              alt="Avatar MAG"
+              className="w-full h-full object-cover object-top scale-110 group-hover:scale-125 transition-transform duration-300"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          <div className="text-left">
+            <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-bold normal-case tracking-normal -mb-0.5 flex items-center gap-1">
+              Assistente IA <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+            </span>
+            <span className="tracking-tight text-xs font-black text-[#005BAC] dark:text-sky-300">Conheça a MAG</span>
+          </div>
+          <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400 animate-pulse shrink-0 ml-0.5" />
+        </button>
+      )}
     </div>
   );
 }

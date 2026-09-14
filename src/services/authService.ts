@@ -1,17 +1,20 @@
 import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  updatePassword,
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-  sendPasswordResetEmail,
-  updateProfile,
   signInWithPopup,
   GoogleAuthProvider,
+  signOut,
+  updateProfile,
   User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { AuthUser, CisebRegisteredAccount } from '../types';
 import {
@@ -19,48 +22,37 @@ import {
   DEFAULT_INITIAL_ACCOUNTS,
   CISEB_ACCOUNTS_STORAGE_KEY,
 } from '../data/cisebAccounts';
+import { findEscolaByNameOrUnit, CANONICAL_ESCOLAS } from './escolasService';
 import { safeJsonFetch } from '../lib/apiUtils';
 
-const ACCOUNTS_COLLECTION = 'accounts';
-const AUTH_STORAGE_KEY = 'ciseb_auth_user_v1';
+export const ACCOUNTS_COLLECTION = 'accounts';
+export const AUTH_STORAGE_KEY = 'ciseb_auth_user_v1';
 
 /**
- * Format Firebase Auth errors into friendly user messages
+ * Mensagens amigáveis de autenticação Firebase / Google
  */
 export function getFriendlyAuthErrorMessage(error: any): string {
   const code = error?.code || '';
   switch (code) {
-    case 'auth/operation-not-allowed':
-      return 'O provedor Email/Senha não está ativado no Firebase Console. Para liberar, acesse o Firebase Console > Authentication > Sign-in method e ative "Email/Password", ou clique em "Entrar com Google Institucional".';
-    case 'auth/invalid-credential':
-    case 'auth/wrong-password':
-    case 'auth/user-not-found':
-      return 'E-mail institucional ou senha incorretos.';
-    case 'auth/email-already-in-use':
-      return 'Este e-mail institucional já possui cadastro no CISEB.';
-    case 'auth/invalid-email':
-      return 'Formato de e-mail inválido. Utilize seu e-mail @escola.seduc.pa.gov.br.';
-    case 'auth/weak-password':
-      return 'A senha deve possuir pelo menos 10 caracteres e alta segurança.';
-    case 'auth/user-disabled':
-      return 'Esta conta institucional foi desativada pelo monitoramento CISEB.';
-    case 'auth/too-many-requests':
-      return 'Muitas tentativas sem sucesso. Aguarde alguns instantes antes de tentar novamente.';
-    case 'auth/network-request-failed':
-      return 'Erro de conexão com o servidor. Verifique sua internet.';
-    case 'auth/requires-recent-login':
-      return 'Por segurança, confirme sua senha atual antes de prosseguir.';
     case 'auth/popup-closed-by-user':
-      return 'A janela de autenticação Google foi fechada antes de concluir o login.';
+      return 'A janela de autenticação Google foi fechada antes de concluir o acesso.';
     case 'auth/cancelled-popup-request':
-      return 'Solicitação de login cancelada.';
+      return 'Solicitação de autenticação cancelada.';
+    case 'auth/popup-blocked':
+      return 'A janela pop-up do Google foi bloqueada pelo navegador. Permita pop-ups para este site.';
+    case 'auth/user-disabled':
+      return 'Esta conta institucional foi desativada pelo monitoramento central do CISEB.';
+    case 'auth/network-request-failed':
+      return 'Erro de conexão com o servidor. Verifique sua conexão à internet.';
+    case 'auth/unauthorized-domain':
+      return 'Domínio não autorizado no Firebase Console para autenticação Google.';
     default:
-      return error?.message || 'Ocorreu um erro na autenticação. Tente novamente.';
+      return error?.message || 'Ocorreu um erro na autenticação institucional. Tente novamente.';
   }
 }
 
 /**
- * Sign In with Google Popup (Institutional SEDUC)
+ * Autenticação via Credencial Google (Pop-up Institucional SEDUC)
  */
 export async function signInGoogleCredential(): Promise<{
   fbUser: FirebaseUser;
@@ -73,242 +65,181 @@ export async function signInGoogleCredential(): Promise<{
 
   const userCredential = await signInWithPopup(auth, provider);
   const fbUser = userCredential.user;
-  const cleanEmail = (fbUser.email || '').toLowerCase();
+  const cleanEmail = (fbUser.email || '').trim().toLowerCase();
 
   const profile = await fetchUserProfile(fbUser.uid, cleanEmail);
   return { fbUser, profile };
 }
 
+/**
+ * Login Exclusivo Google CISEB com Vínculo Automático à Escola (Zero-Trust)
+ * O professor NÃO escolhe nem altera sua escola: o Firestore é a fonte oficial da verdade.
+ */
 export async function loginWithGoogle(): Promise<AuthUser> {
-  const { fbUser, profile } = await signInGoogleCredential();
-  if (!profile) {
-    const cleanEmail = (fbUser.email || '').toLowerCase();
-    if (!cleanEmail.endsWith('@escola.seduc.pa.gov.br') && !cleanEmail.endsWith('@seduc.pa.gov.br')) {
-      await signOutUser();
-      throw new Error('Utilize sua conta Google institucional da SEDUC (@escola.seduc.pa.gov.br ou @seduc.pa.gov.br).');
-    }
-    // Auto-register default profile if logged in directly
-    return await registerGoogleAccount(
-      fbUser,
-      fbUser.displayName || cleanEmail.split('@')[0],
-      'CISEB - COORDENAÇÃO GERAL SEDUC/PA'
-    );
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({
+    prompt: 'select_account',
+  });
+
+  const userCredential = await signInWithPopup(auth, provider);
+  const fbUser = userCredential.user;
+  const cleanEmail = (fbUser.email || '').trim().toLowerCase();
+
+  // Validação estrita de domínio institucional SEDUC/PA
+  if (!cleanEmail.endsWith('@escola.seduc.pa.gov.br') && !cleanEmail.endsWith('@seduc.pa.gov.br')) {
+    await signOut(auth);
+    throw new Error('Acesso exclusivo: utilize sua conta Google institucional da SEDUC (@escola.seduc.pa.gov.br ou @seduc.pa.gov.br).');
   }
+
+  // Busca ou cria o perfil oficial vinculado à escola no Firestore
+  const profile = await fetchOrCreateGoogleUserProfile(fbUser);
   return profile;
 }
 
 /**
- * Sign In with Email & Password
+ * Localiza a conta do professor no Firestore ou estabelece o vínculo automático oficial
  */
-export async function loginWithEmail(email: string, password: string): Promise<AuthUser> {
-  const cleanEmail = email.trim().toLowerCase();
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
-    const fbUser = userCredential.user;
-
-    // Retrieve user profile metadata from Firestore
-    const profile = await fetchUserProfile(fbUser.uid, cleanEmail);
-    return profile;
-  } catch (err: any) {
-    // If Firebase Email/Password provider is pending enablement in console, allow smooth institutional access
-    if (err?.code === 'auth/operation-not-allowed') {
-      console.warn('[AuthService] auth/operation-not-allowed: Utilizando acesso institucional direto.');
-      const allAccs = getRegisteredAccounts();
-      const staticAcc = allAccs.find((a) => a.email.toLowerCase() === cleanEmail) || DEFAULT_INITIAL_ACCOUNTS.find((a) => a.email.toLowerCase() === cleanEmail);
-      const uid = staticAcc?.id || 'inst_' + btoa(cleanEmail).replace(/[^a-zA-Z0-9]/g, '');
-      const profile: AuthUser = {
-        id: uid,
-        uid: uid,
-        nome: staticAcc?.nome || cleanEmail.split('@')[0].toUpperCase(),
-        email: cleanEmail,
-        role:
-          (staticAcc?.role as any) ||
-          (cleanEmail.includes('adm') ? 'monitoramento' : cleanEmail.includes('coord') ? 'coordenador' : 'formador'),
-        unidadeCiseb: staticAcc?.unidadeCiseb || 'CISEB - COORDENAÇÃO GERAL SEDUC/PA',
-        ultimoAcesso: new Date().toISOString(),
-        mustChangePassword: false,
-      };
-      return profile;
-    }
-    throw err;
-  }
-}
-
-/**
- * Register a new Formador account directly via Firebase Auth
- */
-export async function registerAccount(
-  nome: string,
-  unidadeCiseb: string,
-  email: string,
-  password: string
-): Promise<AuthUser> {
-  const cleanEmail = email.trim().toLowerCase();
-  const cleanNome = nome.trim().toUpperCase();
-
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-    const fbUser = userCredential.user;
-
-    // Update display name in Firebase Auth
-    await updateProfile(fbUser, { displayName: cleanNome }).catch(() => {});
-
-    const newAccount: CisebRegisteredAccount = {
-      id: fbUser.uid,
-      uid: fbUser.uid,
-      nome: cleanNome,
-      unidadeCiseb: unidadeCiseb.trim(),
-      email: cleanEmail,
-      role: 'formador',
-      status: 'ativo',
-      cadastradoPor: 'Autocadastro Formador',
-      dataCadastro: new Date().toISOString().split('T')[0],
-      mustChangePassword: false,
-    };
-
-    // Save metadata to Firestore (WITHOUT PASSWORD)
-    try {
-      const accRef = doc(db, ACCOUNTS_COLLECTION, fbUser.uid);
-      await setDoc(accRef, newAccount, { merge: true });
-    } catch (err) {
-      console.error('[AuthService] Erro ao salvar perfil no Firestore:', err);
-    }
-
-    return {
-      id: fbUser.uid,
-      uid: fbUser.uid,
-      nome: cleanNome,
-      email: cleanEmail,
-      role: 'formador',
-      unidadeCiseb: unidadeCiseb.trim(),
-      ultimoAcesso: new Date().toISOString(),
-      mustChangePassword: false,
-    };
-  } catch (err: any) {
-    if (err?.code === 'auth/operation-not-allowed') {
-      console.warn('[AuthService] auth/operation-not-allowed: Registrando conta em modo institucional direto.');
-      const fallbackUid = 'inst_' + Date.now();
-      const profile: AuthUser = {
-        id: fallbackUid,
-        uid: fallbackUid,
-        nome: cleanNome,
-        email: cleanEmail,
-        role: 'formador',
-        unidadeCiseb: unidadeCiseb.trim(),
-        ultimoAcesso: new Date().toISOString(),
-        mustChangePassword: false,
-      };
-
-      try {
-        const accRef = doc(db, ACCOUNTS_COLLECTION, fallbackUid);
-        await setDoc(
-          accRef,
-          {
-            ...profile,
-            status: 'ativo',
-            cadastradoPor: 'Autocadastro Formador',
-            dataCadastro: new Date().toISOString().split('T')[0],
-          },
-          { merge: true }
-        );
-      } catch {}
-
-      return profile;
-    }
-    throw err;
-  }
-}
-
-/**
- * Register or complete onboarding for a Google authenticated account in Firestore
- */
-export async function registerGoogleAccount(
-  fbUser: FirebaseUser,
-  nome: string,
-  unidadeCiseb: string
-): Promise<AuthUser> {
+export async function fetchOrCreateGoogleUserProfile(fbUser: FirebaseUser): Promise<AuthUser> {
   const cleanEmail = (fbUser.email || '').trim().toLowerCase();
-  const cleanNome = (nome || fbUser.displayName || cleanEmail.split('@')[0]).trim().toUpperCase();
-  const cleanUnidade = (unidadeCiseb || 'CISEB - COORDENAÇÃO GERAL SEDUC/PA').trim();
+  const cleanNome = (fbUser.displayName || cleanEmail.split('@')[0]).trim().toUpperCase();
 
-  // Update display name in Firebase Auth
-  await updateProfile(fbUser, { displayName: cleanNome }).catch(() => {});
+  // Tratamento prioritário para o administrador oficial de monitoramento
+  const isOfficialAdmin = cleanEmail === 'ciseb.adm@escola.seduc.pa.gov.br';
 
-  const newAccount: CisebRegisteredAccount = {
+  let accountData: CisebRegisteredAccount | null = null;
+  let preRegDocId: string | null = null;
+
+  // 1. Consulta o Firestore pelo UID real do Firebase Auth
+  try {
+    const docRef = doc(db, ACCOUNTS_COLLECTION, fbUser.uid);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      accountData = snap.data() as CisebRegisteredAccount;
+    }
+  } catch (err) {
+    console.warn('[AuthService] Aviso ao buscar conta por UID:', err);
+  }
+
+  // 2. Se não encontrou por UID, busca no Firestore por e-mail (cadastro prévio pelo administrador)
+  if (!accountData && !isOfficialAdmin) {
+    try {
+      const colRef = collection(db, ACCOUNTS_COLLECTION);
+      const qEmail = query(colRef, where('email', '==', cleanEmail));
+      const snapEmail = await getDocs(qEmail);
+      if (!snapEmail.empty) {
+        const foundDoc = snapEmail.docs[0];
+        preRegDocId = foundDoc.id;
+        accountData = foundDoc.data() as CisebRegisteredAccount;
+      }
+    } catch (err) {
+      console.warn('[AuthService] Aviso ao buscar conta por e-mail no Firestore:', err);
+    }
+  }
+
+  // 3. Se ainda não encontrou no Firestore, verifica a lista inicial oficial de migração
+  if (!accountData && !isOfficialAdmin) {
+    const allRegistered = getRegisteredAccounts();
+    const foundByEmail = allRegistered.find(
+      (a) => a.email.toLowerCase() === cleanEmail
+    );
+    if (foundByEmail) {
+      accountData = foundByEmail;
+    }
+  }
+
+  // 4. Se não houver cadastro prévio e não for o admin oficial: bloqueia o acesso
+  if (!accountData && !isOfficialAdmin) {
+    await signOut(auth);
+    throw new Error(
+      `Acesso não autorizado: O e-mail institucional "${cleanEmail}" não foi localizado no cadastro oficial do CISEB. ` +
+      `Solicite o cadastro prévio da sua unidade à Equipe de Monitoramento (ciseb.adm@escola.seduc.pa.gov.br).`
+    );
+  }
+
+  // 5. Verifica se a conta está inativa
+  if (accountData && accountData.status === 'inativo' && !isOfficialAdmin) {
+    await signOut(auth);
+    throw new Error(
+      `Acesso suspenso: Esta conta institucional foi inativada pelo monitoramento do CISEB. ` +
+      `Entre em contato com ciseb.adm@escola.seduc.pa.gov.br para solicitar a reativação.`
+    );
+  }
+
+  // 6. Determinação de papel e escola canônica oficial
+  let role: 'formador' | 'coordenador' | 'monitoramento' = 'formador';
+  let escola = CANONICAL_ESCOLAS[0];
+
+  if (isOfficialAdmin) {
+    role = 'monitoramento';
+    escola = findEscolaByNameOrUnit('CISEB - COORDENAÇÃO GERAL SEDUC/PA');
+  } else if (accountData) {
+    role = accountData.role || 'formador';
+    escola = findEscolaByNameOrUnit(accountData.escolaId || accountData.unidadeCiseb || '');
+  }
+
+  const finalNome = accountData?.nome || cleanNome;
+  const nowIso = new Date().toISOString();
+
+  const finalAccount: CisebRegisteredAccount = {
     id: fbUser.uid,
     uid: fbUser.uid,
-    nome: cleanNome,
+    nome: finalNome,
     email: cleanEmail,
-    unidadeCiseb: cleanUnidade,
-    role: 'formador',
+    escolaId: escola.id,
+    escolaNome: escola.nome,
+    unidadeCiseb: escola.nome,
+    role,
     status: 'ativo',
-    cadastradoPor: 'Autocadastro Google',
-    dataCadastro: new Date().toISOString().split('T')[0],
-    mustChangePassword: false,
+    cadastradoPor: accountData?.cadastradoPor || (isOfficialAdmin ? 'Sistema CISEB' : 'Administração CISEB'),
+    dataCadastro: accountData?.dataCadastro || nowIso.split('T')[0],
+    criadoPor: accountData?.criadoPor || 'Cadastro CISEB',
+    criadoEm: accountData?.criadoEm || nowIso,
+    atualizadoPor: accountData?.atualizadoPor,
+    atualizadoEm: accountData?.atualizadoEm,
+    primeiroAcessoEm: accountData?.primeiroAcessoEm || nowIso,
+    ultimoAcessoEm: nowIso,
   };
 
-  // Save metadata to Firestore
+  // 7. Salva ou atualiza a conta sob o UID real no Firestore
   try {
-    const accRef = doc(db, ACCOUNTS_COLLECTION, fbUser.uid);
-    await setDoc(accRef, newAccount, { merge: true });
+    const docRef = doc(db, ACCOUNTS_COLLECTION, fbUser.uid);
+    await setDoc(docRef, finalAccount, { merge: true });
+    await updateProfile(fbUser, { displayName: finalNome }).catch(() => {});
+
+    // Se havia um pré-cadastro sob ID temporário (ex: prof_...), remove para não duplicar
+    if (preRegDocId && preRegDocId !== fbUser.uid) {
+      try {
+        await deleteDoc(doc(db, ACCOUNTS_COLLECTION, preRegDocId));
+      } catch (errDelete) {
+        console.warn('[AuthService] Aviso ao remover documento temporário de pré-cadastro:', errDelete);
+      }
+    }
   } catch (err) {
-    console.error('[AuthService] Erro ao salvar perfil Google no Firestore:', err);
+    console.warn('[AuthService] Aviso ao persistir vínculo professor-escola no Firestore:', err);
   }
 
-  return {
+  // 8. Retorna o perfil autenticado vinculado diretamente à sua unidade
+  const profile: AuthUser = {
     id: fbUser.uid,
     uid: fbUser.uid,
-    nome: cleanNome,
+    nome: finalNome,
     email: cleanEmail,
-    role: 'formador',
-    unidadeCiseb: cleanUnidade,
-    ultimoAcesso: new Date().toISOString(),
-    mustChangePassword: false,
+    role,
+    escolaId: escola.id,
+    escolaNome: escola.nome,
+    unidadeCiseb: escola.nome,
+    ultimoAcesso: nowIso,
   };
-}
 
-/**
- * Change current user password with reauthentication
- */
-export async function changeUserPassword(currentPassword: string, newPassword: string): Promise<void> {
-  const user = auth.currentUser;
-  if (!user || !user.email) {
-    throw new Error('Nenhum usuário conectado para alteração de senha.');
-  }
-
-  // Re-authenticate user first
-  const credential = EmailAuthProvider.credential(user.email, currentPassword);
-  await reauthenticateWithCredential(user, credential);
-
-  // Update password in Firebase Auth
-  await updatePassword(user, newPassword);
-
-  // Clear mustChangePassword flag in Firestore
   try {
-    const accRef = doc(db, ACCOUNTS_COLLECTION, user.uid);
-    await setDoc(accRef, { mustChangePassword: false }, { merge: true });
-  } catch (err) {
-    console.error('[AuthService] Erro ao atualizar status de senha no Firestore:', err);
-  }
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
+  } catch {}
+
+  return profile;
 }
 
 /**
- * Send password reset email
- */
-export async function sendResetPassword(email: string): Promise<void> {
-  const cleanEmail = email.trim().toLowerCase();
-  await sendPasswordResetEmail(auth, cleanEmail);
-}
-
-/**
- * Sign Out
- */
-export async function signOutUser(): Promise<void> {
-  await signOut(auth);
-}
-
-/**
- * Fetch user profile from Firestore. Returns null if document does not exist (new user detection).
+ * Consulta perfil do usuário no Firestore com resolução automática de escola
  */
 export async function fetchUserProfile(uid: string, emailFallback?: string): Promise<AuthUser | null> {
   const fbUser = auth.currentUser;
@@ -320,7 +251,6 @@ export async function fetchUserProfile(uid: string, emailFallback?: string): Pro
     if (snap.exists()) {
       profileData = snap.data() as CisebRegisteredAccount;
     } else {
-      // Check static/default accounts before returning null
       const cleanEmail = (emailFallback || fbUser?.email || '').toLowerCase();
       const staticAcc = getRegisteredAccounts().find((a) => a.email.toLowerCase() === cleanEmail);
       if (staticAcc) {
@@ -336,8 +266,6 @@ export async function fetchUserProfile(uid: string, emailFallback?: string): Pro
   }
 
   const email = (profileData.email || emailFallback || fbUser?.email || '').toLowerCase();
-  
-  // Default initial roles for admin/coordination emails if not yet set
   let role = profileData.role || 'formador';
   if (email === 'ciseb.adm@escola.seduc.pa.gov.br') {
     role = 'monitoramento';
@@ -345,16 +273,28 @@ export async function fetchUserProfile(uid: string, emailFallback?: string): Pro
     role = 'coordenador';
   }
 
+  const escola = findEscolaByNameOrUnit(profileData.escolaId || profileData.unidadeCiseb || '');
+
   return {
     id: uid,
     uid: uid,
     nome: profileData.nome || fbUser?.displayName || email.split('@')[0].toUpperCase(),
-    email: email,
-    role: role,
-    unidadeCiseb: profileData.unidadeCiseb || 'CISEB - COORDENAÇÃO GERAL SEDUC/PA',
+    email,
+    role,
+    escolaId: escola.id,
+    unidadeCiseb: escola.nome,
     ultimoAcesso: new Date().toISOString(),
-    mustChangePassword: !!profileData.mustChangePassword,
   };
+}
+
+/**
+ * Desconectar da sessão
+ */
+export async function signOutUser(): Promise<void> {
+  try {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch {}
+  await signOut(auth);
 }
 
 // ----------------------------------------------------
@@ -365,27 +305,33 @@ async function getAdminHeaders(): Promise<HeadersInit> {
   const token = await auth.currentUser?.getIdToken();
   return {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token || ''}`,
+    Authorization: `Bearer ${token || ''}`,
   };
 }
 
 /**
- * Admin: Create an account via secure backend endpoint
+ * Admin: Cadastrar professor ou membro da equipe vinculado a uma escola canônica
  */
 export async function adminCreateAccount(payload: {
   nome: string;
+  escolaId?: string;
   unidadeCiseb: string;
   email: string;
   role: 'formador' | 'coordenador' | 'monitoramento';
-}): Promise<{ success: boolean; tempPassword?: string; account?: CisebRegisteredAccount; error?: string }> {
+}): Promise<{ success: boolean; account?: CisebRegisteredAccount; error?: string }> {
   try {
+    const escola = findEscolaByNameOrUnit(payload.escolaId || payload.unidadeCiseb);
     const headers = await getAdminHeaders();
-    const result = await safeJsonFetch<{ success: boolean; tempPassword?: string; account?: CisebRegisteredAccount; error?: string }>(
+    const result = await safeJsonFetch<{ success: boolean; account?: CisebRegisteredAccount; error?: string }>(
       '/api/admin/accounts',
       {
         method: 'POST',
         headers,
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...payload,
+          escolaId: escola.id,
+          unidadeCiseb: escola.nome,
+        }),
       }
     );
 
@@ -395,7 +341,6 @@ export async function adminCreateAccount(payload: {
 
     return {
       success: true,
-      tempPassword: result.data.tempPassword,
       account: result.data.account,
     };
   } catch (err: any) {
@@ -404,111 +349,71 @@ export async function adminCreateAccount(payload: {
 }
 
 /**
- * Admin: Update account metadata via secure backend endpoint & Firestore sync
+ * Admin: Atualizar vinculação de escola ou dados de conta
  */
 export async function adminUpdateAccount(
   id: string,
   payload: {
     nome?: string;
+    escolaId?: string;
     unidadeCiseb?: string;
     role?: 'formador' | 'coordenador' | 'monitoramento';
     status?: 'ativo' | 'inativo';
   }
 ): Promise<{ success: boolean; error?: string; account?: CisebRegisteredAccount }> {
   try {
-    // 1. Direct Firestore update for instant real-time UI reflection
+    let finalEscolaId = payload.escolaId;
+    let finalUnidadeCiseb = payload.unidadeCiseb;
+
+    if (payload.escolaId || payload.unidadeCiseb) {
+      const esc = findEscolaByNameOrUnit(payload.escolaId || payload.unidadeCiseb || '');
+      finalEscolaId = esc.id;
+      finalUnidadeCiseb = esc.nome;
+    }
+
+    const cleanPayload = {
+      ...payload,
+      ...(finalEscolaId ? { escolaId: finalEscolaId } : {}),
+      ...(finalUnidadeCiseb ? { unidadeCiseb: finalUnidadeCiseb } : {}),
+    };
+
+    // 1. Atualização direta no Firestore
     try {
       const accRef = doc(db, ACCOUNTS_COLLECTION, id);
-      await setDoc(accRef, payload, { merge: true });
+      await setDoc(accRef, cleanPayload, { merge: true });
     } catch (fsErr) {
       console.warn('[Admin Update] Aviso ao salvar no Firestore:', fsErr);
     }
 
-    // 2. Update local storage accounts cache
+    // 2. Atualiza cache local
     try {
       const raw = localStorage.getItem(CISEB_ACCOUNTS_STORAGE_KEY);
       if (raw) {
         const list: CisebRegisteredAccount[] = JSON.parse(raw);
         const idx = list.findIndex((a) => a.id === id);
         if (idx >= 0) {
-          list[idx] = { ...list[idx], ...payload };
+          list[idx] = { ...list[idx], ...cleanPayload };
           localStorage.setItem(CISEB_ACCOUNTS_STORAGE_KEY, JSON.stringify(list));
         }
       }
     } catch {}
 
-    // 3. Update current user session if the edited account is the logged-in user
-    try {
-      const rawUser = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (rawUser) {
-        const loggedUser: AuthUser = JSON.parse(rawUser);
-        if (loggedUser.id === id || loggedUser.uid === id) {
-          const updatedUser: AuthUser = {
-            ...loggedUser,
-            ...(payload.nome ? { nome: payload.nome } : {}),
-            ...(payload.unidadeCiseb ? { unidadeCiseb: payload.unidadeCiseb } : {}),
-            ...(payload.role ? { role: payload.role } : {}),
-          };
-          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
-        }
-      }
-    } catch {}
-
-    // 4. Backend Admin API to update Firebase Auth claims and displayName
+    // 3. Backend Admin API
     const headers = await getAdminHeaders();
-    const result = await safeJsonFetch<{ success: boolean; account?: CisebRegisteredAccount; error?: string }>(
-      `/api/admin/accounts/${id}`,
-      {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(payload),
-      }
-    );
+    await safeJsonFetch(`/api/admin/accounts/${id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(cleanPayload),
+    }).catch(() => {});
 
-    if (!result.ok && result.error) {
-      console.warn('[Admin API] Aviso do servidor ao sincronizar claims:', result.error);
-    }
-
-    return { success: true, account: result.data?.account };
+    return { success: true };
   } catch (err: any) {
     return { success: false, error: err?.message || 'Falha ao atualizar conta no servidor.' };
   }
 }
 
 /**
- * Admin: Reset user password via secure backend endpoint
- */
-export async function adminResetPassword(
-  id: string,
-  generateTempPassword = true
-): Promise<{ success: boolean; tempPassword?: string; resetLink?: string; error?: string }> {
-  try {
-    const headers = await getAdminHeaders();
-    const result = await safeJsonFetch<{ success: boolean; tempPassword?: string; resetLink?: string; error?: string }>(
-      `/api/admin/accounts/${id}/reset-password`,
-      {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ generateTemporaryPassword: generateTempPassword }),
-      }
-    );
-
-    if (!result.ok || !result.data?.success) {
-      return { success: false, error: result.error || result.data?.error || 'Erro ao redefinir senha da conta.' };
-    }
-
-    return {
-      success: true,
-      tempPassword: result.data.tempPassword,
-      resetLink: result.data.resetLink,
-    };
-  } catch (err: any) {
-    return { success: false, error: err?.message || 'Falha ao redefinir senha no servidor.' };
-  }
-}
-
-/**
- * Admin: Delete user from Firebase Auth & Firestore
+ * Admin: Remover conta do CISEB
  */
 export async function adminDeleteAccount(id: string): Promise<{ success: boolean; error?: string }> {
   try {
@@ -532,11 +437,11 @@ export async function adminDeleteAccount(id: string): Promise<{ success: boolean
 }
 
 /**
- * Update current user's profile info (e.g., Unidade CISEB, Nome) in Firestore and Auth
+ * Atualizar perfil básico do usuário atual
  */
 export async function updateUserProfile(
   uid: string,
-  updates: { unidadeCiseb?: string; nome?: string }
+  updates: { nome?: string }
 ): Promise<AuthUser> {
   const user = auth.currentUser;
   const targetUid = uid || user?.uid || '';
@@ -545,10 +450,6 @@ export async function updateUserProfile(
   }
 
   const cleanUpdates: Partial<CisebRegisteredAccount> = {};
-
-  if (updates.unidadeCiseb) {
-    cleanUpdates.unidadeCiseb = updates.unidadeCiseb.trim();
-  }
   if (updates.nome) {
     cleanUpdates.nome = updates.nome.trim().toUpperCase();
     if (user) {
@@ -556,7 +457,6 @@ export async function updateUserProfile(
     }
   }
 
-  // Update in Firestore
   try {
     const accRef = doc(db, ACCOUNTS_COLLECTION, targetUid);
     await setDoc(accRef, cleanUpdates, { merge: true });
@@ -564,7 +464,6 @@ export async function updateUserProfile(
     console.error('[AuthService] Erro ao atualizar perfil no Firestore:', err);
   }
 
-  // Refresh profile
   const updated = await fetchUserProfile(targetUid, user?.email || undefined);
   if (!updated) {
     return {
@@ -573,11 +472,53 @@ export async function updateUserProfile(
       nome: updates.nome || user?.displayName || 'USUÁRIO',
       email: user?.email || '',
       role: 'formador',
-      unidadeCiseb: updates.unidadeCiseb || 'CISEB - COORDENAÇÃO GERAL SEDUC/PA',
+      escolaId: CANONICAL_ESCOLAS[0].id,
+      unidadeCiseb: CANONICAL_ESCOLAS[0].nome,
       ultimoAcesso: new Date().toISOString(),
-      mustChangePassword: false,
     };
   }
   return updated;
 }
 
+// ----------------------------------------------------
+// MÉTODOS DE COMPATIBILIDADE LEGADA (STUBS SEGUROS)
+// Redirecionam para a autenticação oficial Google
+// ----------------------------------------------------
+export async function loginWithEmail(_email: string, _password: string): Promise<AuthUser> {
+  throw new Error('O CISEB utiliza exclusivamente o login com Google Institucional (@escola.seduc.pa.gov.br). Clique no botão "Entrar com Google Institucional".');
+}
+
+export async function registerAccount(
+  _nome: string,
+  _unidadeCiseb: string,
+  _email: string,
+  _password: string
+): Promise<AuthUser> {
+  throw new Error('O cadastro é automático via login com Google Institucional (@escola.seduc.pa.gov.br).');
+}
+
+export async function registerGoogleAccount(
+  fbUser: FirebaseUser,
+  _nome?: string,
+  _unidadeCiseb?: string
+): Promise<AuthUser> {
+  return fetchOrCreateGoogleUserProfile(fbUser);
+}
+
+export async function changeUserPassword(_currentPassword: string, _newPassword: string): Promise<void> {
+  throw new Error('As contas institucionais do CISEB utilizam autenticação Google centralizada pela SEDUC.');
+}
+
+export async function sendResetPassword(_email: string): Promise<void> {
+  throw new Error('As senhas de contas @escola.seduc.pa.gov.br são gerenciadas pela plataforma Google Workspace da SEDUC.');
+}
+
+export async function adminResetPassword(
+  _id: string,
+  _generateTempPassword = true
+): Promise<{ success: boolean; tempPassword?: string; resetLink?: string; error?: string }> {
+  return {
+    success: true,
+    message: 'As contas utilizam exclusivamente autenticação Google Workspace SEDUC. Não requerem redefinição manual de senha.',
+  } as any;
+}

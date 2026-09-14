@@ -211,20 +211,10 @@ export const AdminAccountsPanel: React.FC<AdminAccountsPanelProps> = ({
     setNewEmailPrefix('');
     setNewCustomUnit('');
 
-    // Open Temporary Password Modal
-    if (result.tempPassword) {
-      setTempPasswordModal({
-        isOpen: true,
-        nome: newName.trim().toUpperCase(),
-        email: cleanEmail,
-        tempPassword: result.tempPassword,
-      });
-    } else {
-      setFeedback({
-        type: 'success',
-        text: `Conta de ${cleanEmail} cadastrada com sucesso!`,
-      });
-    }
+    setFeedback({
+      type: 'success',
+      text: `Conta institucional de ${cleanEmail} cadastrada com sucesso! O acesso é via Google SEDUC.`,
+    });
 
     setActiveTab('list');
   };

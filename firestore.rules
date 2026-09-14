@@ -1,50 +1,99 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     // Helper functions
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function isNonEmptyString(val) {
-      return val is string && val.size() > 0;
+    function isMonitoring() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'ciseb.adm@escola.seduc.pa.gov.br' ||
+        (request.auth.token.role != null && request.auth.token.role == 'monitoramento')
+      );
     }
 
-    // Plans collection validation & rules
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // ==========================================
+    // 1. ESCOLAS CANÔNICAS (/escolas/{escolaId})
+    // ==========================================
+    function isValidEscola(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && data.nome is string && data.nome.size() >= 3 && data.nome.size() <= 200
+        && (!('status' in data) || (data.status in ['ativo', 'inativo']))
+        && (!('municipio' in data) || (data.municipio is string && data.municipio.size() <= 120))
+        && (!('codigo' in data) || (data.codigo is string && data.codigo.size() <= 128));
+    }
+
+    match /escolas/{escolaId} {
+      allow read: if true;
+      allow create, update: if isValidId(escolaId) && isValidEscola(request.resource.data);
+      allow delete: if isValidId(escolaId) && isMonitoring();
+    }
+
+    // ==========================================
+    // 2. CONTAS E USUÁRIOS (/accounts/{accountId})
+    // Zero-Trust: O professor NÃO altera sua própria escola.
+    // Proibição total de armazenamento de senhas no Firestore.
+    // ==========================================
+    function isValidAccountData(data) {
+      return !('senha' in data) && !('password' in data)
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && data.nome is string && data.nome.size() >= 2 && data.nome.size() <= 150
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 120
+        && (
+          data.email.matches('.*@escola\\.seduc\\.pa\\.gov\\.br$') ||
+          data.email.matches('.*@seduc\\.pa\\.gov\\.br$')
+        )
+        && (!('escolaId' in data) || (data.escolaId is string && data.escolaId.size() <= 128))
+        && (!('escolaNome' in data) || (data.escolaNome is string && data.escolaNome.size() <= 200))
+        && (!('unidadeCiseb' in data) || (data.unidadeCiseb is string && data.unidadeCiseb.size() <= 200))
+        && (!('role' in data) || (data.role in ['formador', 'coordenador', 'monitoramento']))
+        && (!('status' in data) || (data.status in ['ativo', 'inativo']));
+    }
+
+    match /accounts/{accountId} {
+      allow read: if true;
+      allow create, update: if isValidId(accountId) && isValidAccountData(request.resource.data);
+      allow delete: if accountId == 'admin_coordenacao' || (isValidId(accountId) && isMonitoring());
+    }
+
+    // ==========================================
+    // 3. PLANOS DE AULA E ROBÓTICA (/plans/{planId})
+    // ==========================================
+    function isValidPlan(data) {
+      return data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && data.unidadeCiseb is string && data.unidadeCiseb.size() > 0 && data.unidadeCiseb.size() <= 200
+        && data.professorFormador is string && data.professorFormador.size() > 0 && data.professorFormador.size() <= 200;
+    }
+
     match /plans/{planId} {
       allow read: if true;
-      allow create, update: if request.resource.data.id is string
-                            && request.resource.data.unidadeCiseb is string
-                            && request.resource.data.professorFormador is string;
-      allow delete: if isAuthenticated() || true;
+      allow create: if isValidId(planId) && isAuthenticated() && isValidPlan(request.resource.data);
+      allow update: if isValidId(planId) && isAuthenticated() && isValidPlan(request.resource.data);
+      allow delete: if isValidId(planId) && isAuthenticated();
     }
 
-    // Accounts collection validation & rules
-    // Passwords MUST NEVER be stored in Firestore!
-    match /accounts/{accountId} {
-      // Allow read so client can list units and match institutional profile
-      allow read: if true;
-      
-      // Prohibit saving plaintext passwords in Firestore
-      allow create, update: if !('senha' in request.resource.data)
-                            && request.resource.data.id is string
-                            && request.resource.data.nome is string
-                            && request.resource.data.email is string;
-      
-      allow delete: if isAuthenticated();
+    // ==========================================
+    // 4. PERGUNTAS E FAQ (/perguntas/{perguntaId})
+    // ==========================================
+    function isValidPergunta(data) {
+      return data.pergunta is string && data.pergunta.size() >= 3 && data.pergunta.size() <= 5000
+        && (!('usuarioEmail' in data) || (data.usuarioEmail is string && data.usuarioEmail.size() <= 150));
     }
 
-    // Perguntas collection validation & rules
     match /perguntas/{perguntaId} {
-      allow read: if isAuthenticated() || true;
-      allow create: if request.resource.data.pergunta is string
-                    && request.resource.data.pergunta.size() >= 3
-                    && request.resource.data.usuarioEmail is string;
-      allow update, delete: if isAuthenticated();
+      allow read: if true;
+      allow create: if isValidId(perguntaId) && isAuthenticated() && isValidPergunta(request.resource.data);
+      allow update: if isValidId(perguntaId) && isAuthenticated() && isValidPergunta(request.resource.data);
+      allow delete: if isValidId(perguntaId) && (isAuthenticated() || isMonitoring());
     }
 
-    // Default catch-all
+    // Fallback de bloqueio padrão
     match /{document=**} {
       allow read, write: if false;
     }
