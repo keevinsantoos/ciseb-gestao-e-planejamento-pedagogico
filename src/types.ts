@@ -184,30 +184,55 @@ export interface ChatMessage {
   fallbackReason?: string;
 }
 
+export interface CisebEscola {
+  id: string; // Ex: 'ciseb-augusto-meira'
+  codigo?: string; // Código único da unidade
+  nome: string; // Ex: 'CISEB - EE AUGUSTO MEIRA'
+  municipio: string; // Ex: 'Belém'
+  status: 'ativo' | 'inativo';
+  endereco?: string;
+  telefone?: string;
+  dataCriacao?: string;
+  // Auditoria
+  criadoPor?: string;
+  criadoEm?: string;
+  atualizadoPor?: string;
+  atualizadoEm?: string;
+}
+
 export interface AuthUser {
   id: string;
   uid?: string;
   nome: string;
   email: string;
   role: 'formador' | 'coordenador' | 'tecnico' | 'monitoramento' | 'visitante';
+  escolaId?: string;
+  escolaNome?: string;
   unidadeCiseb?: string;
   matricula?: string;
   avatarUrl?: string;
   ultimoAcesso: string;
-  mustChangePassword?: boolean;
 }
 
 export interface CisebRegisteredAccount {
   id: string;
   uid?: string;
   nome: string;
+  escolaId: string;
+  escolaNome?: string;
   unidadeCiseb: string;
   email: string;
   role: 'formador' | 'coordenador' | 'monitoramento';
   status: 'ativo' | 'inativo';
   cadastradoPor: string;
   dataCadastro: string;
-  mustChangePassword?: boolean;
+  // Auditoria
+  criadoPor?: string;
+  criadoEm?: string;
+  atualizadoPor?: string;
+  atualizadoEm?: string;
+  primeiroAcessoEm?: string;
+  ultimoAcessoEm?: string;
 }
 
 /**

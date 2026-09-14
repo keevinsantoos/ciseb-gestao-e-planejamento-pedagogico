@@ -16,7 +16,6 @@ import React, { useState, useEffect } from 'react';
 import { AuthUser } from '../types';
 import { CisebLogo } from './CisebLogo';
 import { LoginForm } from './auth/LoginForm';
-import { RegisterForm } from './auth/RegisterForm';
 import {
   ExpandableScreen,
   ExpandableScreenContent,
@@ -32,7 +31,6 @@ import {
 } from '@/components/ui/texture-card';
 import {
   KeyRound,
-  UserPlus,
   Headphones,
   ExternalLink,
   LogIn,
@@ -47,7 +45,7 @@ import {
 } from 'lucide-react';
 import { DEFAULT_SUPPORT_URL } from './Header';
 import { DEFAULT_UNIT_SLIDES, UnitSlide } from '../data/unitSlides';
-import CisebThemesCarousel3D from './ciseb/CisebThemesCarousel3D';
+import CisebVisualCarousel from './CisebVisualCarousel';
 
 // ─── PROPS ───────────────────────────────────────────────────────────────────
 interface LoginScreenProps {
@@ -66,7 +64,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onToggleTheme,
   slides = DEFAULT_UNIT_SLIDES,
 }) => {
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -237,66 +234,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                       </div>
 
                       {/* Cabeçalho Responsivo */}
-                      <div className="space-y-1 sm:space-y-1.5 mb-4 sm:mb-5 text-left min-w-0">
+                      <div className="space-y-1 sm:space-y-1.5 mb-5 text-left min-w-0">
                         <h2 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-white break-words">
-                          {activeTab === 'login' ? 'Entrar na Plataforma' : 'Criar Conta de Formador'}
+                          Acesso Oficial CISEB 1.0
                         </h2>
                         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed break-words">
-                          {activeTab === 'login'
-                            ? 'Acesse com seu usuário ou e-mail institucional'
-                            : 'Cadastre sua conta de formador vinculada a uma das 16 unidades CISEB'}
+                          Login exclusivo com sua conta Google institucional SEDUC/PA
                         </p>
                       </div>
 
-                      {/* Abas Alternadoras no padrão Preline / Cult UI */}
-                      <div
-                        className="flex w-full bg-slate-100 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80 mb-4 sm:mb-5 shadow-inner min-w-0"
-                        role="tablist"
-                        aria-label="Opções de acesso ao CISEB"
-                      >
-                        <button
-                          type="button"
-                          role="tab"
-                          aria-selected={activeTab === 'login'}
-                          onClick={() => setActiveTab('login')}
-                          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold tracking-wide transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005BAC]/30 ${
-                            activeTab === 'login'
-                              ? 'bg-white dark:bg-slate-900 text-[#005BAC] dark:text-sky-400 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
-                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-800/40'
-                          }`}
-                        >
-                          <KeyRound className="w-3.5 h-3.5 shrink-0" />
-                          <span className="whitespace-nowrap">Entrar</span>
-                        </button>
-                        <button
-                          type="button"
-                          role="tab"
-                          aria-selected={activeTab === 'register'}
-                          onClick={() => setActiveTab('register')}
-                          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold tracking-wide transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#005BAC]/30 ${
-                            activeTab === 'register'
-                              ? 'bg-white dark:bg-slate-900 text-[#005BAC] dark:text-sky-400 shadow-sm border border-slate-200/60 dark:border-slate-700/60'
-                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-800/40'
-                          }`}
-                        >
-                          <UserPlus className="w-3.5 h-3.5 shrink-0" />
-                          <span className="whitespace-nowrap">Cadastrar</span>
-                        </button>
-                      </div>
-
-                      {/* Formulário Funcional Preservado */}
+                      {/* Formulário Funcional Google Oficial */}
                       <div className="w-full min-w-0">
-                        {activeTab === 'login' ? (
-                          <LoginForm
-                            onLoginSuccess={onLogin}
-                            onSwitchToRegister={() => setActiveTab('register')}
-                          />
-                        ) : (
-                          <RegisterForm
-                            onRegisterSuccess={onLogin}
-                            onSwitchToLogin={() => setActiveTab('login')}
-                          />
-                        )}
+                        <LoginForm
+                          onLoginSuccess={onLogin}
+                        />
                       </div>
                     </div>
 
@@ -309,8 +260,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 </section>
 
                 {/* ── ÁREA 2: EXPOSITOR 3D INTERATIVO DOS 6 TEMAS CISEB (COLUNA DIREITA - APROX 58%) ── */}
-                <section className="w-full min-w-0 flex flex-col h-full min-h-[500px] lg:h-[100dvh] lg:min-h-full bg-gradient-to-br from-[#012d6a] via-[#005BAC] to-[#013780] overflow-hidden self-stretch">
-                  <CisebThemesCarousel3D />
+                <section className="w-full min-w-0 flex flex-col h-full min-h-[500px] lg:h-[100dvh] lg:min-h-full bg-gradient-to-br from-[#012d6a] via-[#005BAC] to-[#013780] overflow-hidden self-stretch relative">
+                  <CisebVisualCarousel />
                 </section>
               </div>
             </div>

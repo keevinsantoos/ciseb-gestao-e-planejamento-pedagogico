@@ -45,9 +45,10 @@ interface HeaderProps {
   onOpenUnitModal?: () => void;
   onChangePassword?: () => void;
   onOpenSupport?: () => void;
+  onBackToHub?: () => void;
   supportUrl?: string;
-  activeView: 'edit' | 'report' | 'monitoring';
-  setActiveView: (view: 'edit' | 'report' | 'monitoring') => void;
+  activeView: 'edit' | 'report' | 'monitoring' | 'admin' | 'hub';
+  setActiveView: (view: 'edit' | 'report' | 'monitoring' | 'admin' | 'hub') => void;
   savedCount: number;
   completionPercentage: number;
   currentUser?: AuthUser | null;
@@ -68,6 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenUnitModal,
   onChangePassword,
   onOpenSupport,
+  onBackToHub,
   supportUrl = DEFAULT_SUPPORT_URL,
   activeView,
   setActiveView,
@@ -111,10 +113,21 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Top Banner with Official CISEB / SEDUC PA Branding */}
       <div className="w-full px-4 sm:px-6 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Brand identity */}
-        <div className="flex items-center gap-3.5 sm:gap-4 shrink-0">
+        <div 
+          onClick={onBackToHub}
+          className="flex items-center gap-3.5 sm:gap-4 shrink-0 cursor-pointer group"
+          title="CISEB - Início / Hub"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onBackToHub?.();
+            }
+          }}
+        >
           <div
-            className="h-14 sm:h-16 md:h-18 w-auto shrink-0 flex items-center justify-center transition-all hover:scale-105"
-            title="CISEB - Centro de Inovação e Sustentabilidade da Educação Básica"
+            className="h-14 sm:h-16 md:h-18 w-auto shrink-0 flex items-center justify-center transition-all group-hover:scale-105"
           >
             <CisebLogo className="h-14 sm:h-16 md:h-18 w-auto drop-shadow-md" variant="light" />
           </div>
@@ -128,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({
                 CISEB POR TODO PARÁ
               </span>
             </div>
-            <h1 className="text-lg sm:text-xl font-black uppercase tracking-wide text-white leading-tight drop-shadow-sm">
+            <h1 className="text-lg sm:text-xl font-black uppercase tracking-wide text-white leading-tight drop-shadow-sm group-hover:text-sky-100 transition-colors">
               SISTEMA DE MONITORAMENTO PEDAGÓGICO
             </h1>
           </div>
@@ -137,129 +150,117 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Action Controls & Navigation */}
         <div className="flex-1 flex items-center justify-end flex-wrap gap-2.5 sm:gap-3 text-xs">
           {/* Main Controls Dock */}
-          <div className="bg-black/20 p-1 rounded-xl border border-white/15 flex items-center gap-1 shadow-sm backdrop-blur-sm">
-            {/* View Toggle */}
-            <button
-              onClick={() => setActiveView('edit')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeView === 'edit'
-                  ? 'bg-white text-[#005BAC] shadow-sm'
-                  : 'text-white/80 hover:text-white hover:bg-white/15'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              Formulário
-            </button>
-            <button
-              onClick={() => setActiveView('report')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeView === 'report'
-                  ? 'bg-white text-[#005BAC] shadow-sm'
-                  : 'text-white/80 hover:text-white hover:bg-white/15'
-              }`}
-            >
-              <Printer className="w-3.5 h-3.5" />
-              Relatório
-            </button>
-
-            {(currentUser?.role === 'monitoramento' || currentUser?.role === 'coordenador') && (
+          {activeView !== 'hub' && (
+            <div className="bg-black/20 p-1 rounded-xl border border-white/15 flex items-center gap-1 shadow-sm backdrop-blur-sm">
+              {/* Back to Hub (if available) */}
               <button
-                onClick={() => setActiveView('monitoring')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeView === 'monitoring'
-                    ? currentUser?.role === 'coordenador'
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
-                      : 'bg-amber-400 text-[#021631] shadow-sm'
-                    : currentUser?.role === 'coordenador'
-                    ? 'text-amber-200 hover:text-amber-100 hover:bg-white/15'
-                    : 'text-white/80 hover:text-amber-300 hover:bg-white/15'
-                }`}
-                title={
-                  currentUser?.role === 'coordenador'
-                    ? 'Painel de Monitoramento CISEB (Coordenação)'
-                    : 'Painel Geral de Monitoramento SEDUC/PA'
-                }
+                onClick={onBackToHub}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer text-white/90 hover:text-white hover:bg-white/20 mr-1"
+                title="Voltar ao Início"
               >
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                Painel
+                <span>&larr;</span> Início
               </button>
-            )}
 
-            <div className="w-px h-5 bg-white/20 hidden sm:block mx-1.5 rounded-full" />
-
-            {/* Actions */}
-            {onSavePlan && (
+              {/* View Toggle */}
               <button
-                type="button"
-                onClick={onSavePlan}
-                disabled={saveStatus === 'saving'}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 border ${
-                  saveStatus === 'saved'
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400'
-                    : saveStatus === 'error'
-                    ? 'bg-red-600 hover:bg-red-500 text-white border-red-400'
-                    : saveStatus === 'saving'
-                    ? 'bg-sky-600 text-white/90 border-sky-400/40 cursor-not-allowed opacity-90'
-                    : 'bg-white text-[#005BAC] hover:bg-sky-50 border-white/80'
+                onClick={() => setActiveView('edit')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeView === 'edit'
+                    ? 'bg-white text-[#005BAC] shadow-sm'
+                    : 'text-white/80 hover:text-white hover:bg-white/15'
                 }`}
-                title="Salvar plano no banco de dados (Ctrl+S)"
               >
-                {saveStatus === 'saving' ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                    <span>Salvando...</span>
-                  </>
-                ) : saveStatus === 'saved' ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                    <span>Plano Salvo!</span>
-                  </>
-                ) : saveStatus === 'error' ? (
-                  <>
-                    <AlertCircle className="w-3.5 h-3.5 text-white" />
-                    <span>Erro ao Salvar</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-3.5 h-3.5 text-[#005BAC]" />
-                    <span>Salvar Plano</span>
-                  </>
+                <FileText className="w-3.5 h-3.5" />
+                Formulário
+              </button>
+              <button
+                onClick={() => setActiveView('report')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeView === 'report'
+                    ? 'bg-white text-[#005BAC] shadow-sm'
+                    : 'text-white/80 hover:text-white hover:bg-white/15'
+                }`}
+              >
+                <Printer className="w-3.5 h-3.5" />
+                Relatório
+              </button>
+
+              <div className="w-px h-5 bg-white/20 hidden sm:block mx-1.5 rounded-full" />
+
+              {/* Actions */}
+              {onSavePlan && (
+                <button
+                  type="button"
+                  onClick={onSavePlan}
+                  disabled={saveStatus === 'saving'}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 border ${
+                    saveStatus === 'saved'
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400'
+                      : saveStatus === 'error'
+                      ? 'bg-red-600 hover:bg-red-500 text-white border-red-400'
+                      : saveStatus === 'saving'
+                      ? 'bg-sky-600 text-white/90 border-sky-400/40 cursor-not-allowed opacity-90'
+                      : 'bg-white text-[#005BAC] hover:bg-sky-50 border-white/80'
+                  }`}
+                  title="Salvar plano no banco de dados (Ctrl+S)"
+                >
+                  {saveStatus === 'saving' ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                      <span>Salvando...</span>
+                    </>
+                  ) : saveStatus === 'saved' ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                      <span>Plano Salvo!</span>
+                    </>
+                  ) : saveStatus === 'error' ? (
+                    <>
+                      <AlertCircle className="w-3.5 h-3.5 text-white" />
+                      <span>Erro ao Salvar</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5 text-[#005BAC]" />
+                      <span>Salvar Plano</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              <button
+                onClick={onNewPlan}
+                className="px-3 py-1.5 rounded-lg text-xs font-black uppercase transition-colors flex items-center gap-1.5 cursor-pointer bg-sky-400 hover:bg-sky-300 text-[#021631] shadow-sm active:scale-95"
+                title="Iniciar novo plano"
+              >
+                <PlusCircle className="w-3.5 h-3.5 text-[#021631]" />
+                <span className="text-[#021631] font-black">Novo</span>
+              </button>
+
+              <button
+                onClick={onOpenHistory}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 relative cursor-pointer text-white/90 hover:text-white hover:bg-white/15"
+                title="Ver planos salvos"
+              >
+                <History className="w-3.5 h-3.5" />
+                Salvos
+                {savedCount > 0 && (
+                  <span className="bg-sky-400 text-[#021631] text-[10px] font-black px-1.5 py-0 rounded-full shadow-xs">
+                    {savedCount}
+                  </span>
                 )}
               </button>
-            )}
 
-            <button
-              onClick={onNewPlan}
-              className="px-3 py-1.5 rounded-lg text-xs font-black uppercase transition-colors flex items-center gap-1.5 cursor-pointer bg-sky-400 hover:bg-sky-300 text-[#021631] shadow-sm active:scale-95"
-              title="Iniciar novo plano"
-            >
-              <PlusCircle className="w-3.5 h-3.5 text-[#021631]" />
-              <span className="text-[#021631] font-black">Novo</span>
-            </button>
-
-            <button
-              onClick={onOpenHistory}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 relative cursor-pointer text-white/90 hover:text-white hover:bg-white/15"
-              title="Ver planos salvos"
-            >
-              <History className="w-3.5 h-3.5" />
-              Salvos
-              {savedCount > 0 && (
-                <span className="bg-sky-400 text-[#021631] text-[10px] font-black px-1.5 py-0 rounded-full shadow-xs">
-                  {savedCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={onOpenGuide}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 cursor-pointer text-white/90 hover:text-white hover:bg-white/15"
-              title="Consultar Referencial Curricular de Computação do Pará"
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span className="hidden lg:inline">Referencial</span> Pará
-            </button>
-          </div>
+              <button
+                onClick={onOpenGuide}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 cursor-pointer text-white/90 hover:text-white hover:bg-white/15"
+                title="Consultar Referencial Curricular de Computação do Pará"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span className="hidden lg:inline">Referencial</span> Pará
+              </button>
+            </div>
+          )}
 
           {/* Right Side Settings & User Profile */}
           <div className="flex items-center gap-1.5">
@@ -364,26 +365,6 @@ export const Header: React.FC<HeaderProps> = ({
                       </button>
                     )}
 
-                    {/* 2. Alterar Minha Senha */}
-                    {onChangePassword && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsSettingsOpen(false);
-                          onChangePassword();
-                        }}
-                        className="w-full px-3.5 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-[#005BAC] dark:hover:text-sky-300 hover:bg-sky-50 dark:hover:bg-slate-700/60 transition-colors flex items-center gap-2.5 cursor-pointer"
-                      >
-                        <div className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300 flex items-center justify-center shrink-0">
-                          <KeyRound className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span>Alterar Minha Senha</span>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-400 font-normal">Exclusivo para seu acesso</span>
-                        </div>
-                      </button>
-                    )}
-
                     {/* 3. Suporte Técnico */}
                     <button
                       type="button"
@@ -402,39 +383,30 @@ export const Header: React.FC<HeaderProps> = ({
                       <ExternalLink className="w-3 h-3 text-slate-400 dark:text-slate-400 shrink-0" />
                     </button>
 
-                    {/* 4. Gestão de Contas (Monitoramento e Coordenação) */}
-                    {onOpenAccountsModal &&
-                      (currentUser?.role === 'monitoramento' || currentUser?.role === 'coordenador') && (
-                        <>
-                          <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsSettingsOpen(false);
-                              onOpenAccountsModal();
-                            }}
-                            className="w-full px-3.5 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-[#005BAC] dark:hover:text-sky-300 hover:bg-sky-50 dark:hover:bg-slate-700/60 transition-colors flex items-center gap-2.5 cursor-pointer"
-                          >
-                            <div
-                              className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
-                                currentUser?.role === 'coordenador'
-                                  ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300'
-                                  : 'bg-blue-100 dark:bg-blue-900/40 text-[#005BAC] dark:text-sky-300'
-                              }`}
-                            >
-                              <Users className="w-3.5 h-3.5" />
-                            </div>
-                            <div className="flex flex-col">
-                              <span>Gestão de Contas</span>
-                              <span className="text-[10px] text-slate-400 dark:text-slate-400 font-normal">
-                                {currentUser?.role === 'coordenador'
-                                  ? 'Formadores da Unidade'
-                                  : 'Monitoramento & Unidades'}
-                              </span>
-                            </div>
-                          </button>
-                        </>
-                      )}
+                    {/* 4. Administração Central CISEB (Exclusivo Monitoramento) */}
+                    {currentUser?.role === 'monitoramento' && (
+                      <>
+                        <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsSettingsOpen(false);
+                            setActiveView('admin');
+                          }}
+                          className="w-full px-3.5 py-2 text-left text-xs font-bold text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors flex items-center gap-2.5 cursor-pointer"
+                        >
+                          <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span>Administração CISEB</span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-400 font-normal">
+                              Professores & Unidades
+                            </span>
+                          </div>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               )}

@@ -231,17 +231,16 @@ async function requireAdminAuth(req: express.Request, res: express.Response, nex
  */
 app.post('/api/admin/accounts', requireAdminAuth, async (req, res) => {
   try {
-    const { nome, email, unidadeCiseb, role } = req.body;
-    if (!nome || !email || !unidadeCiseb) {
+    const { nome, email, unidadeCiseb, escolaId, role } = req.body;
+    if (!nome || !email || (!unidadeCiseb && !escolaId)) {
       return res.status(400).json({ success: false, error: 'Nome, e-mail e unidade CISEB são obrigatórios.' });
     }
 
     const cleanEmail = email.toLowerCase().trim();
-    if (!cleanEmail.endsWith('@escola.seduc.pa.gov.br')) {
-      return res.status(400).json({ success: false, error: 'O e-mail deve pertencer ao domínio @escola.seduc.pa.gov.br' });
+    if (!cleanEmail.endsWith('@escola.seduc.pa.gov.br') && !cleanEmail.endsWith('@seduc.pa.gov.br')) {
+      return res.status(400).json({ success: false, error: 'O e-mail deve pertencer ao domínio institucional SEDUC/PA.' });
     }
 
-    const tempPassword = generateServerSecurePassword(14);
     const accountRole = role || 'formador';
     const accountId = `ciseb_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
@@ -251,41 +250,41 @@ app.post('/api/admin/accounts', requireAdminAuth, async (req, res) => {
     if (adminApp) {
       const auth = getAuth(adminApp);
       try {
-        const userRecord = await auth.createUser({
-          email: cleanEmail,
-          password: tempPassword,
-          displayName: nome.toUpperCase(),
-        });
-        uid = userRecord.uid;
+        const existing = await auth.getUserByEmail(cleanEmail).catch(() => null);
+        if (existing) {
+          uid = existing.uid;
+        } else {
+          const userRecord = await auth.createUser({
+            email: cleanEmail,
+            displayName: nome.toUpperCase(),
+          });
+          uid = userRecord.uid;
+        }
 
-        // Set custom claims (must change password on first login)
+        // Set custom claims
         await auth.setCustomUserClaims(uid, {
           role: accountRole,
           unidadeCiseb,
-          mustChangePassword: true,
+          escolaId: escolaId || '',
         });
       } catch (authErr: any) {
-        if (authErr.code === 'auth/email-already-exists') {
-          return res.status(400).json({ success: false, error: 'Este e-mail institucional já possui cadastro no Firebase Authentication.' });
-        }
-        throw authErr;
+        console.warn('[Admin API] Aviso ao provisionar no Firebase Auth:', authErr?.message);
       }
     }
 
     return res.json({
       success: true,
       account: {
-        id: accountId,
+        id: uid,
         uid,
         nome: nome.toUpperCase(),
         email: cleanEmail,
-        unidadeCiseb,
+        escolaId: escolaId || '',
+        unidadeCiseb: unidadeCiseb || '',
         role: accountRole,
         status: 'ativo',
-        mustChangePassword: true,
         dataCadastro: new Date().toISOString(),
       },
-      tempPassword,
     });
   } catch (error: any) {
     console.error('[Admin API] Erro ao criar conta:', error);

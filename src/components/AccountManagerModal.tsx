@@ -6,6 +6,7 @@ import {
 } from '../types';
 import { getRegisteredAccounts } from '../data/cisebAccounts';
 import { subscribeAccounts } from '../services/firestoreService';
+import { findEscolaByNameOrUnit } from '../services/escolasService';
 import {
   adminCreateAccount,
   adminUpdateAccount,
@@ -184,7 +185,6 @@ export const AccountManagerModal: React.FC<AccountManagerModalProps> = ({
     const total = scopedAccounts.length;
     const ativos = scopedAccounts.filter((a) => a.status !== 'inativo').length;
     const inativos = scopedAccounts.filter((a) => a.status === 'inativo').length;
-    const pendingPasswordChange = scopedAccounts.filter((a) => a.mustChangePassword).length;
 
     const formadoresCount = scopedAccounts.filter((a) => a.role === 'formador').length;
     const coordenadoresCount = scopedAccounts.filter((a) => a.role === 'coordenador').length;
@@ -205,7 +205,6 @@ export const AccountManagerModal: React.FC<AccountManagerModalProps> = ({
       total,
       ativos,
       inativos,
-      pendingPasswordChange,
       formadoresCount,
       coordenadoresCount,
       monitoramentoCount,
@@ -328,9 +327,11 @@ export const AccountManagerModal: React.FC<AccountManagerModalProps> = ({
     }
 
     setIsLoadingAction(true);
+    const escola = findEscolaByNameOrUnit(finalUnit);
     const result = await adminCreateAccount({
       nome: newName.trim().toUpperCase(),
-      unidadeCiseb: finalUnit,
+      escolaId: escola.id,
+      unidadeCiseb: escola.nome,
       email: cleanEmail,
       role: finalRole,
     });
@@ -345,17 +346,7 @@ export const AccountManagerModal: React.FC<AccountManagerModalProps> = ({
     setNewEmailPrefix('');
     setNewCustomUnit('');
 
-    if (result.tempPassword) {
-      setTempModal({
-        isOpen: true,
-        nome: newName.trim().toUpperCase(),
-        email: cleanEmail,
-        tempPassword: result.tempPassword,
-      });
-    } else {
-      setSuccessMsg(`Conta de ${cleanEmail} criada com sucesso!`);
-    }
-
+    setSuccessMsg(`Conta institucional de ${cleanEmail} vinculada à escola ${escola.nome} com sucesso!`);
     setActiveTab('list');
   };
 
@@ -377,9 +368,11 @@ export const AccountManagerModal: React.FC<AccountManagerModalProps> = ({
     }
 
     setIsLoadingAction(true);
+    const escola = findEscolaByNameOrUnit(finalUnit);
     const res = await adminUpdateAccount(id, {
       nome: editName.trim().toUpperCase(),
-      unidadeCiseb: finalUnit,
+      escolaId: escola.id,
+      unidadeCiseb: escola.nome,
       role: finalRole,
     });
     setIsLoadingAction(false);
@@ -974,16 +967,14 @@ export const AccountManagerModal: React.FC<AccountManagerModalProps> = ({
                               <span>{acc.role}</span>
                             </span>
 
-                            {/* Must Change Password Badge */}
-                            {acc.mustChangePassword && (
-                              <span
-                                className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center gap-1"
-                                title="Usuário deve definir uma nova senha no próximo acesso"
-                              >
-                                <Lock className="w-2.5 h-2.5 text-amber-600" />
-                                <span>Senha Temporária</span>
-                              </span>
-                            )}
+                            {/* Google Auth Badge */}
+                            <span
+                              className="px-2 py-0.5 text-[9px] font-bold rounded-md bg-blue-50 text-[#005BAC] dark:bg-blue-950/60 dark:text-sky-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1"
+                              title="Autenticação exclusiva Google Institucional SEDUC"
+                            >
+                              <Shield className="w-2.5 h-2.5" />
+                              <span>Google Auth</span>
+                            </span>
                           </div>
 
                           <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
@@ -1257,16 +1248,16 @@ export const AccountManagerModal: React.FC<AccountManagerModalProps> = ({
                   </div>
                 </div>
 
-                <div className="p-3.5 bg-amber-50 dark:bg-amber-950/30 rounded-2xl border border-amber-200 dark:border-amber-900/40 space-y-1">
-                  <div className="flex items-center justify-between text-amber-700 dark:text-amber-400">
-                    <span className="text-[10px] font-bold uppercase">Troca de Senha</span>
-                    <KeyRound className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <div className="p-3.5 bg-blue-50 dark:bg-blue-950/30 rounded-2xl border border-blue-200 dark:border-blue-900/40 space-y-1">
+                  <div className="flex items-center justify-between text-[#005BAC] dark:text-sky-400">
+                    <span className="text-[10px] font-bold uppercase">Google SEDUC</span>
+                    <Shield className="w-4 h-4 text-[#005BAC] dark:text-sky-400" />
                   </div>
-                  <div className="text-xl font-black text-amber-900 dark:text-amber-200">
-                    {statistics.pendingPasswordChange}
+                  <div className="text-xl font-black text-slate-900 dark:text-white">
+                    {statistics.ativos}
                   </div>
-                  <div className="text-[10px] text-amber-700 dark:text-amber-400">
-                    Senhas temporárias ativas
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Contas Google ativas
                   </div>
                 </div>
 

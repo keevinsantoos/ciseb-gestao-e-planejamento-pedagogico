@@ -136,7 +136,7 @@ export function useAuth() {
     try {
       await changeUserPassword(currentPass, newPass);
       if (user) {
-        const updated = { ...user, mustChangePassword: false };
+        const updated = { ...user };
         setUser(updated);
         try {
           localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
@@ -198,7 +198,7 @@ export function useAuth() {
     firebaseUser,
     loading,
     error,
-    mustChangePassword: !!user?.mustChangePassword,
+    mustChangePassword: false,
     login,
     loginGoogle,
     signInGoogleCredential,

@@ -12,6 +12,7 @@ import {
 import { db } from '../lib/firebase';
 import { CisebSessionPlan, CisebRegisteredAccount, isPlanExpired } from '../types';
 import { DEFAULT_INITIAL_ACCOUNTS, CISEB_ACCOUNTS_STORAGE_KEY } from '../data/cisebAccounts';
+import { findEscolaByNameOrUnit } from './escolasService';
 
 const PLANS_COLLECTION = 'plans';
 const ACCOUNTS_COLLECTION = 'accounts';
@@ -193,7 +194,14 @@ export async function saveAccountToFirestore(account: CisebRegisteredAccount): P
   try {
     const accRef = doc(db, ACCOUNTS_COLLECTION, account.id);
     const sanitized = JSON.parse(JSON.stringify(account));
-    delete sanitized.senha;
+    delete (sanitized as any).senha;
+    delete (sanitized as any).password;
+    delete (sanitized as any).mustChangePassword;
+    if (!sanitized.escolaId) {
+      const esc = findEscolaByNameOrUnit(sanitized.unidadeCiseb || '');
+      sanitized.escolaId = esc.id;
+      sanitized.unidadeCiseb = esc.nome;
+    }
     await setDoc(accRef, sanitized, { merge: true });
     console.log(`[Firestore] Conta ${account.nome} sincronizada no Firestore.`);
   } catch (error) {
@@ -237,28 +245,39 @@ export function subscribeAccounts(callback: (accounts: CisebRegisteredAccount[])
         if (!snapshot.empty) {
           const accountsMap = new Map<string, CisebRegisteredAccount>();
           
-          // Seed defaults into map (Monitoramento & Coordenação)
+          // Seed defaults into map (Monitoramento)
           DEFAULT_INITIAL_ACCOUNTS.forEach(acc => {
             accountsMap.set(acc.email.toLowerCase(), { ...acc });
           });
 
-          // Overlay snapshot data (ignoring and deleting deprecated pre-seeded form_ accounts)
+          // Overlay snapshot data (ignoring and deleting deprecated accounts)
           snapshot.forEach((docSnap) => {
-            if (docSnap.id.startsWith('form_')) {
-              // Asynchronously clean up deprecated pre-seeded sample accounts
+            if (docSnap.id.startsWith('form_') || docSnap.id === 'admin_coordenacao') {
+              // Asynchronously clean up deprecated accounts
               deleteDoc(doc(db, ACCOUNTS_COLLECTION, docSnap.id)).catch(() => {});
               return;
             }
 
             const data = docSnap.data() as CisebRegisteredAccount;
             const emailKey = data.email?.toLowerCase();
+            if (emailKey === 'ciseb.coordenacao@escola.seduc.pa.gov.br') {
+              deleteDoc(doc(db, ACCOUNTS_COLLECTION, docSnap.id)).catch(() => {});
+              return;
+            }
+
             if (emailKey) {
+              if (!data.escolaId) {
+                const esc = findEscolaByNameOrUnit(data.unidadeCiseb || '');
+                data.escolaId = esc.id;
+                data.unidadeCiseb = esc.nome;
+              }
               const defaultAcc = DEFAULT_INITIAL_ACCOUNTS.find(d => d.email.toLowerCase() === emailKey);
               if (defaultAcc) {
                 // Keep official credentials updated for default accounts
                 accountsMap.set(emailKey, {
                   ...data,
                   nome: defaultAcc.nome,
+                  escolaId: defaultAcc.escolaId,
                   unidadeCiseb: defaultAcc.unidadeCiseb,
                   email: defaultAcc.email,
                   role: defaultAcc.role,
