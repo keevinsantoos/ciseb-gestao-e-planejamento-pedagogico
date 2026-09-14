@@ -215,6 +215,7 @@ export async function cadastrarProfessor(params: {
     escolaId: escola.id,
     escolaNome: escola.nome,
     unidadeCiseb: escola.nome,
+    dre: escola.dre || '',
     role: 'formador',
     status,
     // Auditoria
@@ -280,6 +281,7 @@ export async function atualizarProfessor(params: {
       escolaId: escola.id,
       escolaNome: escola.nome,
       unidadeCiseb: escola.nome,
+      dre: escola.dre || '',
       status: params.status,
       atualizadoPor: adminEmail,
       atualizadoEm: nowIso,
@@ -365,6 +367,7 @@ export async function cadastrarUnidade(params: {
   codigo?: string;
   nome: string;
   municipio: string;
+  dre?: string;
   status?: 'ativo' | 'inativo';
   adminEmail: string;
   existingUnits: CisebEscola[];
@@ -380,6 +383,7 @@ export async function cadastrarUnidade(params: {
 }> {
   const cleanNome = (params.nome || '').trim().toUpperCase();
   const cleanMunicipio = (params.municipio || '').trim();
+  const cleanDre = (params.dre || '').trim().toUpperCase();
   const status = params.status || 'ativo';
   const adminEmail = (params.adminEmail || 'ciseb.adm@escola.seduc.pa.gov.br').trim().toLowerCase();
 
@@ -430,6 +434,7 @@ export async function cadastrarUnidade(params: {
     codigo: cleanCodigo,
     nome: cleanNome,
     municipio: cleanMunicipio || 'Pará',
+    dre: cleanDre,
     status,
     dataCriacao: nowIso.split('T')[0],
     // Auditoria
@@ -457,6 +462,7 @@ export async function atualizarUnidade(params: {
   id: string;
   nome: string;
   municipio: string;
+  dre?: string;
   status: 'ativo' | 'inativo';
   adminEmail: string;
   existingUnits: CisebEscola[];
@@ -471,6 +477,7 @@ export async function atualizarUnidade(params: {
 }> {
   const cleanNome = (params.nome || '').trim().toUpperCase();
   const cleanMunicipio = (params.municipio || '').trim();
+  const cleanDre = (params.dre || '').trim().toUpperCase();
   const adminEmail = (params.adminEmail || 'ciseb.adm@escola.seduc.pa.gov.br').trim().toLowerCase();
 
   if (!cleanNome || cleanNome.length < 4) {
@@ -500,12 +507,37 @@ export async function atualizarUnidade(params: {
       {
         nome: cleanNome,
         municipio: cleanMunicipio,
+        dre: cleanDre,
         status: params.status,
         atualizadoPor: adminEmail,
         atualizadoEm: nowIso,
       },
       { merge: true }
     );
+
+    // Sincroniza em cascata para os professores vinculados a esta unidade
+    try {
+      const accColRef = collection(db, ACCOUNTS_COLLECTION);
+      const qAcc = query(accColRef, where('escolaId', '==', params.id));
+      const accSnap = await getDocs(qAcc);
+      if (!accSnap.empty) {
+        for (const docAcc of accSnap.docs) {
+          await setDoc(
+            docAcc.ref,
+            {
+              escolaNome: cleanNome,
+              unidadeCiseb: cleanNome,
+              dre: cleanDre,
+              atualizadoEm: nowIso,
+            },
+            { merge: true }
+          );
+        }
+      }
+    } catch (cascadeErr) {
+      console.warn('[AdminService] Aviso ao propagar alteração da unidade para professores:', cascadeErr);
+    }
+
     return { success: true };
   } catch (err: any) {
     console.error('[AdminService] Erro ao atualizar unidade:', err);

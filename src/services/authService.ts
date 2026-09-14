@@ -180,6 +180,8 @@ export async function fetchOrCreateGoogleUserProfile(fbUser: FirebaseUser): Prom
   const finalNome = accountData?.nome || cleanNome;
   const nowIso = new Date().toISOString();
 
+  const finalDre = accountData?.dre || escola.dre || '';
+
   const finalAccount: CisebRegisteredAccount = {
     id: fbUser.uid,
     uid: fbUser.uid,
@@ -188,6 +190,7 @@ export async function fetchOrCreateGoogleUserProfile(fbUser: FirebaseUser): Prom
     escolaId: escola.id,
     escolaNome: escola.nome,
     unidadeCiseb: escola.nome,
+    dre: finalDre,
     role,
     status: 'ativo',
     cadastradoPor: accountData?.cadastradoPor || (isOfficialAdmin ? 'Sistema CISEB' : 'Administração CISEB'),
@@ -228,6 +231,7 @@ export async function fetchOrCreateGoogleUserProfile(fbUser: FirebaseUser): Prom
     escolaId: escola.id,
     escolaNome: escola.nome,
     unidadeCiseb: escola.nome,
+    dre: finalDre,
     ultimoAcesso: nowIso,
   };
 
@@ -274,6 +278,7 @@ export async function fetchUserProfile(uid: string, emailFallback?: string): Pro
   }
 
   const escola = findEscolaByNameOrUnit(profileData.escolaId || profileData.unidadeCiseb || '');
+  const finalDre = profileData.dre || escola.dre || '';
 
   return {
     id: uid,
@@ -282,7 +287,9 @@ export async function fetchUserProfile(uid: string, emailFallback?: string): Pro
     email,
     role,
     escolaId: escola.id,
+    escolaNome: escola.nome,
     unidadeCiseb: escola.nome,
+    dre: finalDre,
     ultimoAcesso: new Date().toISOString(),
   };
 }

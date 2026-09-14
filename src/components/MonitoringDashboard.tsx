@@ -37,6 +37,14 @@ import {
   Flame,
   CheckCircle2,
 } from 'lucide-react';
+import {
+  PopoverRoot,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverBody,
+  PopoverButton,
+} from './ui/popover';
 
 export interface MonitoringDashboardProps {
   user: AuthUser;
@@ -639,79 +647,143 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
           {/* Selects Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 flex-1 lg:max-w-4xl">
             {/* Unidade */}
-            <div className="relative">
-              <select
-                id="filter-unidade"
-                value={selectedUnit}
-                onChange={(e) => setSelectedUnit(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-medium focus:ring-2 focus:ring-[#005BAC] outline-none cursor-pointer"
-                title="Filtrar por Unidade CISEB"
-              >
-                <option value="ALL">Todas as Unidades CISEB</option>
-                {UNIDADES_CISEB_OPTIONS.map((u) => (
-                  <option key={u} value={u}>
-                    {cleanUnitName(u)}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <PopoverRoot>
+              <PopoverTrigger className="rounded-xl px-3 py-1.5 text-xs font-medium">
+                <Building2 className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 shrink-0" />
+                <span className="truncate">
+                  {selectedUnit === 'ALL' ? 'Todas as Unidades' : cleanUnitName(selectedUnit)}
+                </span>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 max-h-72">
+                <PopoverHeader>Filtrar por Unidade CISEB</PopoverHeader>
+                <PopoverBody>
+                  <PopoverButton
+                    isSelected={selectedUnit === 'ALL'}
+                    onClick={() => setSelectedUnit('ALL')}
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>Todas as Unidades</span>
+                  </PopoverButton>
+                  {UNIDADES_CISEB_OPTIONS.map((u) => (
+                    <PopoverButton
+                      key={u}
+                      isSelected={selectedUnit === u}
+                      onClick={() => setSelectedUnit(u)}
+                    >
+                      <Building2 className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 shrink-0" />
+                      <span className="truncate">{cleanUnitName(u)}</span>
+                    </PopoverButton>
+                  ))}
+                </PopoverBody>
+              </PopoverContent>
+            </PopoverRoot>
 
             {/* Modalidade */}
-            <div className="relative">
-              <select
-                id="filter-modalidade"
-                value={selectedModalidade}
-                onChange={(e) => setSelectedModalidade(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-medium focus:ring-2 focus:ring-[#005BAC] outline-none cursor-pointer"
-                title="Filtrar por Modalidade de Atendimento"
-              >
-                <option value="ALL">Todas as Modalidades</option>
-                {MODALIDADES_OPTIONS.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <PopoverRoot>
+              <PopoverTrigger className="rounded-xl px-3 py-1.5 text-xs font-medium">
+                <Layers className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 shrink-0" />
+                <span className="truncate">
+                  {selectedModalidade === 'ALL' ? 'Todas as Modalidades' : selectedModalidade}
+                </span>
+              </PopoverTrigger>
+              <PopoverContent className="w-56">
+                <PopoverHeader>Filtrar por Modalidade</PopoverHeader>
+                <PopoverBody>
+                  <PopoverButton
+                    isSelected={selectedModalidade === 'ALL'}
+                    onClick={() => setSelectedModalidade('ALL')}
+                  >
+                    <Layers className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>Todas as Modalidades</span>
+                  </PopoverButton>
+                  {MODALIDADES_OPTIONS.map((m) => (
+                    <PopoverButton
+                      key={m}
+                      isSelected={selectedModalidade === m}
+                      onClick={() => setSelectedModalidade(m)}
+                    >
+                      <Layers className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 shrink-0" />
+                      <span className="truncate">{m}</span>
+                    </PopoverButton>
+                  ))}
+                </PopoverBody>
+              </PopoverContent>
+            </PopoverRoot>
 
             {/* Tema de Imersão */}
-            <div className="relative">
-              <select
-                id="filter-tema"
-                value={selectedTema}
-                onChange={(e) => setSelectedTema(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-medium focus:ring-2 focus:ring-[#005BAC] outline-none cursor-pointer"
-                title="Filtrar por Tema de Imersão"
-              >
-                <option value="ALL">Todos os Temas de Imersão</option>
-                {TEMAS_IMERSAO_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <PopoverRoot>
+              <PopoverTrigger className="rounded-xl px-3 py-1.5 text-xs font-medium">
+                <BookOpen className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 shrink-0" />
+                <span className="truncate">
+                  {selectedTema === 'ALL' ? 'Todos os Temas' : selectedTema}
+                </span>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 max-h-72">
+                <PopoverHeader>Filtrar por Tema</PopoverHeader>
+                <PopoverBody>
+                  <PopoverButton
+                    isSelected={selectedTema === 'ALL'}
+                    onClick={() => setSelectedTema('ALL')}
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>Todos os Temas</span>
+                  </PopoverButton>
+                  {TEMAS_IMERSAO_OPTIONS.map((t) => (
+                    <PopoverButton
+                      key={t}
+                      isSelected={selectedTema === t}
+                      onClick={() => setSelectedTema(t)}
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 shrink-0" />
+                      <span className="truncate">{t}</span>
+                    </PopoverButton>
+                  ))}
+                </PopoverBody>
+              </PopoverContent>
+            </PopoverRoot>
 
             {/* Período */}
             <div className="relative flex items-center gap-1.5">
-              <select
-                id="filter-periodo"
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value as any)}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 font-medium focus:ring-2 focus:ring-[#005BAC] outline-none cursor-pointer"
-                title="Filtrar por Período de Criação"
-              >
-                <option value="ALL">Todo o Período</option>
-                <option value="7days">Últimos 7 dias</option>
-                <option value="30days">Últimos 30 dias</option>
-                <option value="thisMonth">Este mês</option>
-              </select>
+              <PopoverRoot>
+                <PopoverTrigger className="rounded-xl px-3 py-1.5 text-xs font-medium">
+                  <Calendar className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 shrink-0" />
+                  <span className="truncate">
+                    {selectedPeriod === 'ALL'
+                      ? 'Todo o Período'
+                      : selectedPeriod === '7days'
+                      ? 'Últimos 7 dias'
+                      : selectedPeriod === '30days'
+                      ? 'Últimos 30 dias'
+                      : 'Este mês'}
+                  </span>
+                </PopoverTrigger>
+                <PopoverContent className="w-48">
+                  <PopoverHeader>Período de Criação</PopoverHeader>
+                  <PopoverBody>
+                    {[
+                      { id: 'ALL', label: 'Todo o Período' },
+                      { id: '7days', label: 'Últimos 7 dias' },
+                      { id: '30days', label: 'Últimos 30 dias' },
+                      { id: 'thisMonth', label: 'Este mês' },
+                    ].map((p) => (
+                      <PopoverButton
+                        key={p.id}
+                        isSelected={selectedPeriod === p.id}
+                        onClick={() => setSelectedPeriod(p.id as any)}
+                      >
+                        <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{p.label}</span>
+                      </PopoverButton>
+                    ))}
+                  </PopoverBody>
+                </PopoverContent>
+              </PopoverRoot>
 
               {activeFiltersCount > 0 && (
                 <button
                   type="button"
                   onClick={handleClearFilters}
-                  className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-xl text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
+                  className="px-2.5 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-xl text-xs font-bold flex items-center gap-1 shrink-0 cursor-pointer transition-colors"
                   title="Limpar todos os filtros"
                   aria-label="Limpar filtros"
                 >

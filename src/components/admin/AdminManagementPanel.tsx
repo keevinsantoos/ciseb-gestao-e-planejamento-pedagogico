@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AuthUser, CisebEscola, CisebRegisteredAccount } from '../../types';
+import { DRES_OFICIAIS } from '../../data/dres';
 import {
   subscribeAdminProfessores,
   subscribeAdminUnidades,
@@ -64,10 +65,12 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
   // Filtros - Professores
   const [searchProf, setSearchProf] = useState('');
   const [filterUnitProf, setFilterUnitProf] = useState('ALL');
+  const [filterDreProf, setFilterDreProf] = useState('ALL');
   const [filterStatusProf, setFilterStatusProf] = useState<'ALL' | 'ativo' | 'inativo'>('ALL');
 
   // Filtros - Unidades
   const [searchUnit, setSearchUnit] = useState('');
+  const [filterDreUnit, setFilterDreUnit] = useState('ALL');
   const [filterStatusUnit, setFilterStatusUnit] = useState<'ALL' | 'ativo' | 'inativo'>('ALL');
 
   // Modais de Criação e Edição
@@ -95,6 +98,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
   const [newUnitNome, setNewUnitNome] = useState('');
   const [newUnitCodigo, setNewUnitCodigo] = useState('');
   const [newUnitMunicipio, setNewUnitMunicipio] = useState('');
+  const [newUnitDre, setNewUnitDre] = useState('');
   const [newUnitStatus, setNewUnitStatus] = useState<'ativo' | 'inativo'>('ativo');
   const [similarUnitWarning, setSimilarUnitWarning] = useState<CisebEscola | null>(null);
   const [confirmSimilarBypass, setConfirmSimilarBypass] = useState(false);
@@ -102,6 +106,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
   // Editar Unidade
   const [editUnitNome, setEditUnitNome] = useState('');
   const [editUnitMunicipio, setEditUnitMunicipio] = useState('');
+  const [editUnitDre, setEditUnitDre] = useState('');
   const [editUnitStatus, setEditUnitStatus] = useState<'ativo' | 'inativo'>('ativo');
 
   // Mensagens de Feedback & Carregamento
@@ -257,6 +262,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
     setNewUnitNome('');
     setNewUnitCodigo('');
     setNewUnitMunicipio('Belém');
+    setNewUnitDre('');
     setNewUnitStatus('ativo');
     setSimilarUnitWarning(null);
     setConfirmSimilarBypass(false);
@@ -276,6 +282,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
       codigo: newUnitCodigo,
       nome: newUnitNome,
       municipio: newUnitMunicipio,
+      dre: newUnitDre,
       status: newUnitStatus,
       adminEmail: currentUser?.email || 'ciseb.adm@escola.seduc.pa.gov.br',
       existingUnits: unidades,
@@ -298,6 +305,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
     setEditingUnit(unit);
     setEditUnitNome(unit.nome);
     setEditUnitMunicipio(unit.municipio || '');
+    setEditUnitDre(unit.dre || '');
     setEditUnitStatus(unit.status || 'ativo');
     setIsEditUnitModalOpen(true);
   };
@@ -311,6 +319,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
       id: editingUnit.id,
       nome: editUnitNome,
       municipio: editUnitMunicipio,
+      dre: editUnitDre,
       status: editUnitStatus,
       adminEmail: currentUser?.email || 'ciseb.adm@escola.seduc.pa.gov.br',
       existingUnits: unidades,
@@ -389,27 +398,31 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
       const matchSearch =
         p.nome.toLowerCase().includes(searchProf.toLowerCase()) ||
         p.email.toLowerCase().includes(searchProf.toLowerCase()) ||
-        (p.escolaNome || p.unidadeCiseb || '').toLowerCase().includes(searchProf.toLowerCase());
+        (p.escolaNome || p.unidadeCiseb || '').toLowerCase().includes(searchProf.toLowerCase()) ||
+        (p.dre || '').toLowerCase().includes(searchProf.toLowerCase());
 
       const matchUnit = filterUnitProf === 'ALL' || p.escolaId === filterUnitProf;
+      const matchDre = filterDreProf === 'ALL' || (p.dre || '').toUpperCase() === filterDreProf.toUpperCase();
       const matchStatus = filterStatusProf === 'ALL' || p.status === filterStatusProf;
 
-      return matchSearch && matchUnit && matchStatus;
+      return matchSearch && matchUnit && matchDre && matchStatus;
     });
-  }, [professores, searchProf, filterUnitProf, filterStatusProf]);
+  }, [professores, searchProf, filterUnitProf, filterDreProf, filterStatusProf]);
 
   const filteredUnidades = useMemo(() => {
     return unidades.filter((u) => {
       const matchSearch =
         u.nome.toLowerCase().includes(searchUnit.toLowerCase()) ||
         u.id.toLowerCase().includes(searchUnit.toLowerCase()) ||
-        (u.municipio || '').toLowerCase().includes(searchUnit.toLowerCase());
+        (u.municipio || '').toLowerCase().includes(searchUnit.toLowerCase()) ||
+        (u.dre || '').toLowerCase().includes(searchUnit.toLowerCase());
 
+      const matchDre = filterDreUnit === 'ALL' || (u.dre || '').toUpperCase() === filterDreUnit.toUpperCase();
       const matchStatus = filterStatusUnit === 'ALL' || u.status === filterStatusUnit;
 
-      return matchSearch && matchStatus;
+      return matchSearch && matchDre && matchStatus;
     });
-  }, [unidades, searchUnit, filterStatusUnit]);
+  }, [unidades, searchUnit, filterDreUnit, filterStatusUnit]);
 
   // Contagem de professores por unidade
   const teachersCountByUnit = useMemo(() => {
@@ -536,9 +549,10 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
               <button
                 type="button"
                 onClick={onBackToEdit}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer shadow-xs"
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
+                title="Retornar à página inicial do CISEB"
               >
-                Voltar ao Formulário
+                <span>&larr;</span> Voltar ao Início
               </button>
             )}
           </div>
@@ -702,12 +716,26 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
               <select
                 value={filterUnitProf}
                 onChange={(e) => setFilterUnitProf(e.target.value)}
-                className="w-full sm:w-60 px-3 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#005BAC]"
+                className="w-full sm:w-56 px-3 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#005BAC]"
               >
                 <option value="ALL">Todas as Unidades</option>
                 {unidades.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.nome}
+                  </option>
+                ))}
+              </select>
+
+              {/* Filtro por DRE */}
+              <select
+                value={filterDreProf}
+                onChange={(e) => setFilterDreProf(e.target.value)}
+                className="w-full sm:w-48 px-3 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#005BAC]"
+              >
+                <option value="ALL">Todas as DREs</option>
+                {DRES_OFICIAIS.map((dre) => (
+                  <option key={dre} value={dre}>
+                    {dre}
                   </option>
                 ))}
               </select>
@@ -793,10 +821,17 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                           </td>
 
                           <td className="py-3.5 px-4 sm:px-6">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
-                              <School className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400" />
-                              {prof.escolaNome || prof.unidadeCiseb}
-                            </span>
+                            <div className="space-y-1">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
+                                <School className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400" />
+                                {prof.escolaNome || prof.unidadeCiseb}
+                              </span>
+                              {prof.dre && (
+                                <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 block pl-1">
+                                  {prof.dre}
+                                </span>
+                              )}
+                            </div>
                           </td>
 
                           <td className="py-3.5 px-4 sm:px-6">
@@ -884,6 +919,20 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                 />
               </div>
 
+              {/* Filtro por DRE */}
+              <select
+                value={filterDreUnit}
+                onChange={(e) => setFilterDreUnit(e.target.value)}
+                className="w-full sm:w-48 px-3 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#005BAC]"
+              >
+                <option value="ALL">Todas as DREs</option>
+                {DRES_OFICIAIS.map((dre) => (
+                  <option key={dre} value={dre}>
+                    {dre}
+                  </option>
+                ))}
+              </select>
+
               {/* Filtro por Status */}
               <select
                 value={filterStatusUnit}
@@ -933,6 +982,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                       <th className="py-3.5 px-4 sm:px-6">Unidade Escolar Oficial</th>
                       <th className="py-3.5 px-4 sm:px-6">Código Firestore (ID)</th>
                       <th className="py-3.5 px-4 sm:px-6">Município</th>
+                      <th className="py-3.5 px-4 sm:px-6">DRE</th>
                       <th className="py-3.5 px-4 sm:px-6">Formadores Vinculados</th>
                       <th className="py-3.5 px-4 sm:px-6">Status</th>
                       <th className="py-3.5 px-4 sm:px-6">Auditoria (Criação / Edição)</th>
@@ -964,6 +1014,16 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
 
                           <td className="py-3.5 px-4 sm:px-6 font-medium text-slate-800 dark:text-slate-200">
                             {unit.municipio || 'Pará'}
+                          </td>
+
+                          <td className="py-3.5 px-4 sm:px-6">
+                            {unit.dre ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                {unit.dre}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 italic text-[11px]">Não vinculada</span>
+                            )}
                           </td>
 
                           <td className="py-3.5 px-4 sm:px-6">
@@ -1194,6 +1254,22 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                 </p>
               </div>
 
+              {/* DRE Vinculada (Automática e Somente Leitura) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
+                  DRE Vinculada (Carregamento Automático pela Unidade)
+                </label>
+                <div className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                  <span className="font-semibold">
+                    {unidades.find((u) => u.id === newProfEscolaId)?.dre || 'Não vinculada à DRE'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Automático</span>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  A DRE é determinada exclusivamente pela Unidade CISEB selecionada.
+                </p>
+              </div>
+
               {/* Status */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -1328,6 +1404,22 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* DRE Vinculada (Automática e Somente Leitura) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
+                  DRE Vinculada (Carregamento Automático pela Unidade)
+                </label>
+                <div className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                  <span className="font-semibold">
+                    {unidades.find((u) => u.id === editProfEscolaId)?.dre || 'Não vinculada à DRE'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Automático</span>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  A DRE é vinculada automaticamente conforme a Unidade CISEB selecionada.
+                </p>
               </div>
 
               {/* Status */}
@@ -1483,6 +1575,31 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                 />
               </div>
 
+              {/* DRE (Diretoria Regional de Ensino) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Diretoria Regional de Ensino (DRE) *
+                </label>
+                <select
+                  required
+                  value={newUnitDre}
+                  onChange={(e) => setNewUnitDre(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#005BAC]"
+                >
+                  <option value="" disabled>
+                    Selecione a DRE correspondente
+                  </option>
+                  {DRES_OFICIAIS.map((dre) => (
+                    <option key={dre} value={dre}>
+                      {dre}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  A DRE selecionada será automaticamente vinculada a todos os formadores desta unidade.
+                </p>
+              </div>
+
               {/* Status */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -1599,6 +1716,31 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
                   onChange={(e) => setEditUnitMunicipio(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#005BAC]"
                 />
+              </div>
+
+              {/* DRE (Diretoria Regional de Ensino) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Diretoria Regional de Ensino (DRE) *
+                </label>
+                <select
+                  required
+                  value={editUnitDre}
+                  onChange={(e) => setEditUnitDre(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#005BAC]"
+                >
+                  <option value="" disabled>
+                    Selecione a DRE correspondente
+                  </option>
+                  {DRES_OFICIAIS.map((dre) => (
+                    <option key={dre} value={dre}>
+                      {dre}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  A alteração da DRE atualizará automaticamente todos os professores cadastrados nesta unidade.
+                </p>
               </div>
 
               {/* Status */}

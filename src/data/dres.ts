@@ -1,0 +1,48 @@
+/**
+ * Lista Oficial das 40 Diretorias Regionais de Ensino (DRE) da SEDUC/PA
+ * Padrão com prefixo oficial 'DRE '
+ */
+export const DRES_OFICIAIS = [
+  'DRE ABAETETUBA',
+  'DRE AFUÁ',
+  'DRE ALTAMIRA',
+  'DRE ANANINDEUA 1',
+  'DRE ANANINDEUA 2',
+  'DRE ANANINDEUA 3',
+  'DRE ANANINDEUA 4',
+  'DRE ANANINDEUA 5',
+  'DRE BELÉM 1',
+  'DRE BELÉM 2',
+  'DRE BELÉM 3',
+  'DRE BELÉM 4',
+  'DRE BELÉM 5',
+  'DRE BELÉM 6',
+  'DRE BELÉM 7',
+  'DRE BELÉM 8',
+  'DRE BELÉM 9',
+  'DRE BELÉM 10',
+  'DRE BENEVIDES',
+  'DRE BRAGANÇA',
+  'DRE BREVES',
+  'DRE CACHOEIRA DO ARARI',
+  'DRE CAMETÁ',
+  'DRE CAPANEMA',
+  'DRE CAPITÃO POÇO',
+  'DRE CASTANHAL',
+  'DRE CONCEIÇÃO DO ARAGUAIA',
+  'DRE CURRALINHO',
+  'DRE ITAITUBA',
+  'DRE MÃE DO RIO',
+  'DRE MARABÁ',
+  'DRE MARACANÃ',
+  'DRE MONTE ALEGRE',
+  'DRE ÓBIDOS',
+  'DRE PARAUAPEBAS',
+  'DRE SANTA BÁRBARA',
+  'DRE SANTA IZABEL DO PARÁ',
+  'DRE SANTARÉM',
+  'DRE TUCURUÍ',
+  'DRE XINGUARA',
+] as const;
+
+export type DreOficial = typeof DRES_OFICIAIS[number];

@@ -1,3 +1,7 @@
+import { DRES_OFICIAIS, DreOficial } from './data/dres';
+export { DRES_OFICIAIS };
+export type { DreOficial };
+
 export interface CisebSessionPlan {
   id: string;
   createdAt: string;
@@ -173,7 +177,7 @@ export const TIPO_PROTOTIPO_OPTIONS = [
  */
 export const DEFAULT_MAG_EXTERNAL_URL =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_MAG_EXTERNAL_URL) ||
-  'https://gemini.google.com/gem/1miSU2iNW3sYwrsHDlsTacGy43YmQpLOP?usp=sharing';
+  'https://chatgpt.com/g/g-67cd98a0c4f8819198642a8b3d6f1df8-mag-mentora-pedagogica-ciseb';
 
 export interface ChatMessage {
   id: string;
@@ -188,6 +192,7 @@ export interface CisebEscola {
   id: string; // Ex: 'ciseb-augusto-meira'
   codigo?: string; // Código único da unidade
   nome: string; // Ex: 'CISEB - EE AUGUSTO MEIRA'
+  dre?: string; // Ex: 'DRE BELÉM 7'
   municipio: string; // Ex: 'Belém'
   status: 'ativo' | 'inativo';
   endereco?: string;
@@ -209,6 +214,7 @@ export interface AuthUser {
   escolaId?: string;
   escolaNome?: string;
   unidadeCiseb?: string;
+  dre?: string; // DRE institucional vinculada
   matricula?: string;
   avatarUrl?: string;
   ultimoAcesso: string;
@@ -221,6 +227,7 @@ export interface CisebRegisteredAccount {
   escolaId: string;
   escolaNome?: string;
   unidadeCiseb: string;
+  dre?: string; // DRE institucional vinculada à unidade
   email: string;
   role: 'formador' | 'coordenador' | 'monitoramento';
   status: 'ativo' | 'inativo';

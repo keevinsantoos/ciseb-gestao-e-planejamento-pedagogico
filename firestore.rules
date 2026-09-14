@@ -24,6 +24,7 @@ service cloud.firestore {
     function isValidEscola(data) {
       return data.id is string && data.id.size() > 0 && data.id.size() <= 128
         && data.nome is string && data.nome.size() >= 3 && data.nome.size() <= 200
+        && (!('dre' in data) || (data.dre is string && data.dre.size() <= 120))
         && (!('status' in data) || (data.status in ['ativo', 'inativo']))
         && (!('municipio' in data) || (data.municipio is string && data.municipio.size() <= 120))
         && (!('codigo' in data) || (data.codigo is string && data.codigo.size() <= 128));
@@ -52,6 +53,7 @@ service cloud.firestore {
         && (!('escolaId' in data) || (data.escolaId is string && data.escolaId.size() <= 128))
         && (!('escolaNome' in data) || (data.escolaNome is string && data.escolaNome.size() <= 200))
         && (!('unidadeCiseb' in data) || (data.unidadeCiseb is string && data.unidadeCiseb.size() <= 200))
+        && (!('dre' in data) || (data.dre is string && data.dre.size() <= 120))
         && (!('role' in data) || (data.role in ['formador', 'coordenador', 'monitoramento']))
         && (!('status' in data) || (data.status in ['ativo', 'inativo']));
     }

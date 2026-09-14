@@ -19,6 +19,7 @@ import {
   PROFESSORES_FORMADORES_OPTIONS
 } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import { TopBlur, BottomBlur } from './ui/edge-blur';
 
 interface UnitSelectorModalProps {
   isOpen: boolean;
@@ -219,41 +220,45 @@ export const UnitSelectorModal: React.FC<UnitSelectorModalProps> = ({
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
             </div>
 
-            {/* Units Options List */}
-            <div className="max-h-56 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-800/40 shadow-inner">
-              {filteredUnits.length > 0 ? (
-                filteredUnits.map((unit) => {
-                  const isSelected = selectedUnit === unit;
-                  return (
-                    <button
-                      key={unit}
-                      type="button"
-                      onClick={() => setSelectedUnit(unit)}
-                      className={`w-full text-left px-3.5 py-2.5 text-xs transition-colors flex items-center justify-between gap-3 cursor-pointer ${
-                        isSelected
-                          ? 'bg-sky-50 dark:bg-sky-950/60 font-bold text-[#005BAC] dark:text-sky-300'
-                          : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <School
-                          className={`w-4 h-4 shrink-0 ${
-                            isSelected ? 'text-[#005BAC] dark:text-sky-400' : 'text-slate-400'
-                          }`}
-                        />
-                        <span className="truncate">{unit}</span>
-                      </div>
-                      {isSelected && (
-                        <CheckCircle2 className="w-4 h-4 text-[#005BAC] dark:text-sky-400 shrink-0" />
-                      )}
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="p-4 text-center text-xs text-slate-400">
-                  Nenhuma unidade encontrada para &quot;{searchFilter}&quot;.
-                </div>
-              )}
+            {/* Units Options List with EdgeBlur */}
+            <div className="relative isolate overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/40 shadow-inner">
+              <TopBlur height={20} />
+              <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredUnits.length > 0 ? (
+                  filteredUnits.map((unit) => {
+                    const isSelected = selectedUnit === unit;
+                    return (
+                      <button
+                        key={unit}
+                        type="button"
+                        onClick={() => setSelectedUnit(unit)}
+                        className={`w-full text-left px-3.5 py-2.5 text-xs transition-colors flex items-center justify-between gap-3 cursor-pointer ${
+                          isSelected
+                            ? 'bg-sky-50 dark:bg-sky-950/60 font-bold text-[#005BAC] dark:text-sky-300'
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <School
+                            className={`w-4 h-4 shrink-0 ${
+                              isSelected ? 'text-[#005BAC] dark:text-sky-400' : 'text-slate-400'
+                            }`}
+                          />
+                          <span className="truncate">{unit}</span>
+                        </div>
+                        {isSelected && (
+                          <CheckCircle2 className="w-4 h-4 text-[#005BAC] dark:text-sky-400 shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="p-4 text-center text-xs text-slate-400">
+                    Nenhuma unidade encontrada para &quot;{searchFilter}&quot;.
+                  </div>
+                )}
+              </div>
+              <BottomBlur height={20} />
             </div>
           </div>
 

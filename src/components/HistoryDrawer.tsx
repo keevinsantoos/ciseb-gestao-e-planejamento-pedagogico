@@ -17,6 +17,7 @@ import {
   Clock,
   Info,
 } from 'lucide-react';
+import { TopBlur, BottomBlur } from './ui/edge-blur';
 
 interface HistoryDrawerProps {
   isOpen: boolean;
@@ -166,96 +167,100 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({
         </div>
       </div>
 
-      {/* Plan Cards List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-slate-900/50">
-        {filteredPlans.length > 0 ? (
-          filteredPlans.map((plan) => {
-            const daysRemaining = getPlanDaysRemaining(plan);
-            return (
-            <div
-              key={plan.id}
-              className="bg-white dark:bg-slate-800 rounded-xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-xs space-y-2 hover:border-[#005BAC]/40 dark:hover:border-sky-500/40 transition-all"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-[10px] font-bold uppercase bg-sky-100 dark:bg-sky-900/40 text-[#005BAC] dark:text-sky-300 px-2 py-0.5 rounded">
-                  {plan.temaImersao || 'Geral'}
-                </span>
+      {/* Plan Cards List with EdgeBlur */}
+      <div className="relative isolate flex-1 overflow-hidden">
+        <TopBlur height={24} />
+        <div className="absolute inset-0 overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-slate-900/50">
+          {filteredPlans.length > 0 ? (
+            filteredPlans.map((plan) => {
+              const daysRemaining = getPlanDaysRemaining(plan);
+              return (
+              <div
+                key={plan.id}
+                className="bg-white dark:bg-slate-800 rounded-xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-xs space-y-2 hover:border-[#005BAC]/40 dark:hover:border-sky-500/40 transition-all"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-[10px] font-bold uppercase bg-sky-100 dark:bg-sky-900/40 text-[#005BAC] dark:text-sky-300 px-2 py-0.5 rounded">
+                    {plan.temaImersao || 'Geral'}
+                  </span>
 
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                      daysRemaining <= 1
-                        ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300'
-                        : daysRemaining <= 3
-                        ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
-                        : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300'
-                    }`}
-                    title="Tempo restante até expiração automática após 7 dias de inatividade"
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                        daysRemaining <= 1
+                          ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300'
+                          : daysRemaining <= 3
+                          ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
+                          : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300'
+                      }`}
+                      title="Tempo restante até expiração automática após 7 dias de inatividade"
+                    >
+                      <Clock className="w-2.5 h-2.5" />
+                      {daysRemaining === 0
+                        ? 'Expira hoje'
+                        : daysRemaining === 1
+                        ? 'Expira amanhã'
+                        : `${daysRemaining}d restantes`}
+                    </span>
+
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {new Date(plan.updatedAt || plan.createdAt).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                </div>
+
+                <h4 className="font-bold text-xs text-slate-900 dark:text-white leading-snug">
+                  {plan.tituloSuporte || 'Plano sem título'}
+                </h4>
+
+                <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
+                    <span className="truncate">{plan.unidadeCiseb || 'Unidade não definida'}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 truncate">
+                    <UserCheck className="w-3 h-3 text-emerald-500 shrink-0" />
+                    <span className="truncate font-medium">{plan.professorFormador || currentUser?.nome || 'Você'}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                  <button
+                    onClick={() => {
+                      onLoadPlan(plan);
+                      onClose();
+                    }}
+                    className="px-3 py-1 bg-[#005BAC] hover:bg-[#004785] text-white font-bold rounded-lg text-[11px] transition-colors cursor-pointer shadow-xs active:scale-95"
                   >
-                    <Clock className="w-2.5 h-2.5" />
-                    {daysRemaining === 0
-                      ? 'Expira hoje'
-                      : daysRemaining === 1
-                      ? 'Expira amanhã'
-                      : `${daysRemaining}d restantes`}
-                  </span>
+                    Carregar / Editar
+                  </button>
 
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {new Date(plan.updatedAt || plan.createdAt).toLocaleDateString('pt-BR')}
-                  </span>
+                  <button
+                    onClick={() => onDeletePlan(plan.id)}
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
+                    title="Excluir este plano"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-
-              <h4 className="font-bold text-xs text-slate-900 dark:text-white leading-snug">
-                {plan.tituloSuporte || 'Plano sem título'}
-              </h4>
-
-              <div className="space-y-1 text-[11px] text-slate-600 dark:text-slate-300">
-                <div className="flex items-center gap-1.5 truncate">
-                  <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-                  <span className="truncate">{plan.unidadeCiseb || 'Unidade não definida'}</span>
-                </div>
-
-                <div className="flex items-center gap-1.5 truncate">
-                  <UserCheck className="w-3 h-3 text-emerald-500 shrink-0" />
-                  <span className="truncate font-medium">{plan.professorFormador || currentUser?.nome || 'Você'}</span>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
-                <button
-                  onClick={() => {
-                    onLoadPlan(plan);
-                    onClose();
-                  }}
-                  className="px-3 py-1 bg-[#005BAC] hover:bg-[#004785] text-white font-bold rounded-lg text-[11px] transition-colors cursor-pointer shadow-xs active:scale-95"
-                >
-                  Carregar / Editar
-                </button>
-
-                <button
-                  onClick={() => onDeletePlan(plan.id)}
-                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors cursor-pointer"
-                  title="Excluir este plano"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+              );
+            })
+          ) : (
+            <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500 space-y-2">
+              <FileText className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600" />
+              <p className="font-semibold text-slate-600 dark:text-slate-300">
+                Nenhum plano salvo encontrado para sua conta.
+              </p>
+              <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
+                Os planos que você criar e salvar ficarão armazenados aqui de forma privada para o seu usuário.
+              </p>
             </div>
-            );
-          })
-        ) : (
-          <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500 space-y-2">
-            <FileText className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600" />
-            <p className="font-semibold text-slate-600 dark:text-slate-300">
-              Nenhum plano salvo encontrado para sua conta.
-            </p>
-            <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
-              Os planos que você criar e salvar ficarão armazenados aqui de forma privada para o seu usuário.
-            </p>
-          </div>
-        )}
+          )}
+        </div>
+        <BottomBlur height={32} />
       </div>
     </div>
   );

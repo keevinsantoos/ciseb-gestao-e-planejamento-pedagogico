@@ -22,7 +22,6 @@ import { AdminManagementPanel } from './components/admin/AdminManagementPanel';
 import { AccountManagerModal } from './components/AccountManagerModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { UnitSelectorModal } from './components/UnitSelectorModal';
-import { QuestionBox } from './components/QuestionBox';
 import { subscribePlans, savePlanToFirestore, deletePlanFromFirestore } from './services/firestoreService';
 import { useAuth } from './hooks/useAuth';
 import { safeJsonFetch } from './lib/apiUtils';
@@ -379,6 +378,7 @@ export default function App() {
           />
         ) : activeView === 'edit' ? (
           <SessionForm
+            currentUser={currentUser}
             plan={currentPlan}
             onChange={setCurrentPlan}
             onAiAutoFillSection={handleAiAutoFillSection}
@@ -455,14 +455,6 @@ export default function App() {
         }}
       />
 
-
-      {/* Floating Question & Pedagogical Support Box (MorphSurface) */}
-      {activeView !== 'hub' && (
-        <QuestionBox
-          currentUser={currentUser}
-          className="fixed bottom-6 left-6 z-40 print:hidden"
-        />
-      )}
 
       {/* Floating MAG AI Assistant Button at the Bottom (External Link) */}
       {activeView !== 'hub' && (

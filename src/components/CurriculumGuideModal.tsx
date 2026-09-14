@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, BookOpen, Layers, Cpu, Award, Globe, Leaf, Users } from 'lucide-react';
+import { TopBlur, BottomBlur } from './ui/edge-blur';
 
 interface CurriculumGuideModalProps {
   isOpen: boolean;
@@ -85,8 +86,10 @@ export const CurriculumGuideModal: React.FC<CurriculumGuideModalProps> = ({
           </button>
         </div>
 
-        {/* Content Body */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-4 text-xs text-slate-700 leading-relaxed">
+        {/* Content Body with EdgeBlur */}
+        <div className="relative isolate flex-1 overflow-hidden min-h-[360px]">
+          <TopBlur height={24} />
+          <div className="absolute inset-0 overflow-y-auto p-6 space-y-4 text-xs text-slate-700 leading-relaxed">
           {activeTab === 'principles' && (
             <div className="space-y-4">
               <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
@@ -238,6 +241,8 @@ export const CurriculumGuideModal: React.FC<CurriculumGuideModalProps> = ({
               </div>
             </div>
           )}
+          </div>
+          <BottomBlur height={28} />
         </div>
 
         {/* Footer */}

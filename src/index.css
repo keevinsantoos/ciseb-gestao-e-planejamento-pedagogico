@@ -3,6 +3,28 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+:root {
+  /* CISEB Visual Tokens - Identidade Amazônica Institucional */
+  --ciseb-rio: #0B1F33;       /* Azul profundo - Estrutura, fundos nobres, cabeçalhos */
+  --ciseb-azul: #123F5A;      /* Azul navegação - Docks, superfícies secundárias */
+  --ciseb-floresta: #2F6B4F;  /* Verde floresta - Conclusão, estados positivos, ambiente */
+  --ciseb-sol: #D9A441;       /* Dourado solar - Acentos, indicadores de destaque */
+  --ciseb-terra: #B96845;     /* Terracota - Acentos pontuais, fases especiais */
+  --ciseb-neutro: #F4F1EA;    /* Bege neutro claro - Superfícies de leitura e campos */
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1e293b;
+  background-color: #f8fafc;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 @layer utilities {
   .font-brigends {
     font-family: 'Brigends Expanded', 'Brigends', 'Syne', 'Orbitron', 'Montserrat', sans-serif;

@@ -47,7 +47,20 @@ export const Hub: React.FC<HubProps> = ({
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
             {getGreeting()}, {currentUser.nome?.split(' ')[0]}
           </h2>
-          <p className="text-lg text-slate-600 dark:text-slate-400">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-300 mb-2">
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              {currentUser.unidadeCiseb || currentUser.escolaNome || 'CISEB'}
+            </span>
+            {currentUser.dre && (
+              <>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                  {currentUser.dre}
+                </span>
+              </>
+            )}
+          </div>
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400">
             Escolha uma ferramenta para continuar seu trabalho.
           </p>
         </div>

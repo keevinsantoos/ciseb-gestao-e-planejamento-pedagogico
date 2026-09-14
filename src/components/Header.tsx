@@ -30,6 +30,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { AuthUser } from '../types';
+import { DirectionAwareTabs, TabItem } from './ui/direction-aware-tabs';
+import { BgAnimateButton } from './ui/bg-animate-button';
 
 // URL de Suporte Oficial CISEB SEDUC/PA
 export const DEFAULT_SUPPORT_URL =
@@ -109,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
   return (
-    <header className="sticky top-0 z-30 bg-gradient-to-r from-[#005BAC] via-[#004e96] to-[#013780] text-white border-b border-[#012b66] shadow-md print:hidden">
+    <header className="sticky top-0 z-30 bg-gradient-to-r from-[#005BAC] via-[#004e96] to-[#013780] text-white border-b border-[#012b66] shadow-md print:hidden transition-colors">
       {/* Top Banner with Official CISEB / SEDUC PA Branding */}
       <div className="w-full px-4 sm:px-6 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Brand identity */}
@@ -134,15 +136,15 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="hidden sm:flex flex-col justify-center border-l-2 border-white/20 pl-4 py-1">
             <div className="flex items-center gap-2.5 mb-1.5">
-              <span className="text-[10px] font-black uppercase tracking-widest text-sky-50 bg-white/10 px-2 py-0.5 rounded-sm border border-white/20 backdrop-blur-sm shadow-sm">
-                SEDUC/PA
+              <span className="text-[10px] font-black uppercase tracking-widest text-sky-50 bg-white/15 px-2 py-0.5 rounded border border-white/20 backdrop-blur-sm shadow-xs">
+                DINOV
               </span>
               <span className="text-[10px] text-sky-100 uppercase tracking-widest font-bold opacity-90">
-                CISEB POR TODO PARÁ
+                Diretoria de Inovação
               </span>
             </div>
-            <h1 className="text-lg sm:text-xl font-black uppercase tracking-wide text-white leading-tight drop-shadow-sm group-hover:text-sky-100 transition-colors">
-              SISTEMA DE MONITORAMENTO PEDAGÓGICO
+            <h1 className="text-base sm:text-lg font-bold tracking-wide text-white leading-tight group-hover:text-sky-100 transition-colors">
+              Sistema de Monitoramento Pedagógico
             </h1>
           </div>
         </div>
@@ -151,114 +153,133 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex-1 flex items-center justify-end flex-wrap gap-2.5 sm:gap-3 text-xs">
           {/* Main Controls Dock */}
           {activeView !== 'hub' && (
-            <div className="bg-black/20 p-1 rounded-xl border border-white/15 flex items-center gap-1 shadow-sm backdrop-blur-sm">
+            <div className="bg-black/20 p-1 rounded-xl border border-white/15 flex items-center gap-1 shadow-xs backdrop-blur-sm">
               {/* Back to Hub (if available) */}
               <button
                 onClick={onBackToHub}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer text-white/90 hover:text-white hover:bg-white/20 mr-1"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer text-white/90 hover:text-white hover:bg-white/20 mr-1"
                 title="Voltar ao Início"
               >
                 <span>&larr;</span> Início
               </button>
 
-              {/* View Toggle */}
-              <button
-                onClick={() => setActiveView('edit')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeView === 'edit'
-                    ? 'bg-white text-[#005BAC] shadow-sm'
-                    : 'text-white/80 hover:text-white hover:bg-white/15'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                Formulário
-              </button>
-              <button
-                onClick={() => setActiveView('report')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeView === 'report'
-                    ? 'bg-white text-[#005BAC] shadow-sm'
-                    : 'text-white/80 hover:text-white hover:bg-white/15'
-                }`}
-              >
-                <Printer className="w-3.5 h-3.5" />
-                Relatório
-              </button>
+              {/* Plano de Aula Controls (Only visible when on Plano de Aula) */}
+              {(activeView === 'edit' || activeView === 'report') && (
+                <>
+                  {/* View Toggle with DirectionAwareTabs */}
+                  <DirectionAwareTabs
+                    tabs={[
+                      {
+                        id: 'edit',
+                        label: 'Formulário',
+                        icon: FileText,
+                        onClick: () => setActiveView('edit'),
+                      },
+                      {
+                        id: 'report',
+                        label: 'Relatório',
+                        icon: Printer,
+                        onClick: () => setActiveView('report'),
+                      },
+                    ]}
+                    activeTab={activeView === 'report' ? 'report' : 'edit'}
+                    onChange={(id) => setActiveView(id as 'edit' | 'report')}
+                    className="p-0.5 bg-black/30 border-white/10"
+                    activeTabClassName="bg-white text-[#005BAC] font-bold"
+                  />
 
-              <div className="w-px h-5 bg-white/20 hidden sm:block mx-1.5 rounded-full" />
+                  <div className="w-px h-5 bg-white/20 hidden sm:block mx-1 rounded-full" />
 
-              {/* Actions */}
-              {onSavePlan && (
-                <button
-                  type="button"
-                  onClick={onSavePlan}
-                  disabled={saveStatus === 'saving'}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 border ${
-                    saveStatus === 'saved'
-                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400'
-                      : saveStatus === 'error'
-                      ? 'bg-red-600 hover:bg-red-500 text-white border-red-400'
-                      : saveStatus === 'saving'
-                      ? 'bg-sky-600 text-white/90 border-sky-400/40 cursor-not-allowed opacity-90'
-                      : 'bg-white text-[#005BAC] hover:bg-sky-50 border-white/80'
-                  }`}
-                  title="Salvar plano no banco de dados (Ctrl+S)"
-                >
-                  {saveStatus === 'saving' ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                      <span>Salvando...</span>
-                    </>
-                  ) : saveStatus === 'saved' ? (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                      <span>Plano Salvo!</span>
-                    </>
-                  ) : saveStatus === 'error' ? (
-                    <>
-                      <AlertCircle className="w-3.5 h-3.5 text-white" />
-                      <span>Erro ao Salvar</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-3.5 h-3.5 text-[#005BAC]" />
-                      <span>Salvar Plano</span>
-                    </>
+                  {/* Actions */}
+                  {onSavePlan && (
+                    <BgAnimateButton
+                      type="button"
+                      onClick={onSavePlan}
+                      disabled={saveStatus === 'saving'}
+                      animation={saveStatus === 'saving' ? 'spin-fast' : 'spin-slow'}
+                      gradient={
+                        saveStatus === 'saved'
+                          ? 'emerald'
+                          : saveStatus === 'error'
+                          ? 'sunset'
+                          : 'ocean'
+                      }
+                      size="sm"
+                      title="Salvar plano no banco de dados (Ctrl+S)"
+                    >
+                      {saveStatus === 'saving' ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-300" />
+                          <span>Salvando...</span>
+                        </>
+                      ) : saveStatus === 'saved' ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Plano Salvo!</span>
+                        </>
+                      ) : saveStatus === 'error' ? (
+                        <>
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Erro ao Salvar</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3.5 h-3.5 text-sky-300" />
+                          <span>Salvar</span>
+                        </>
+                      )}
+                    </BgAnimateButton>
                   )}
-                </button>
+
+                  <button
+                    onClick={onNewPlan}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-sky-400 hover:bg-sky-300 text-[#00386b] shadow-xs active:scale-95 border border-sky-300/40"
+                    title="Iniciar novo plano"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5 text-[#00386b]" />
+                    <span className="text-[#00386b] font-bold">Novo</span>
+                  </button>
+
+                  <button
+                    onClick={onOpenHistory}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 relative cursor-pointer text-white/90 hover:text-white hover:bg-white/15"
+                    title="Ver planos salvos"
+                  >
+                    <History className="w-3.5 h-3.5" />
+                    Salvos
+                    {savedCount > 0 && (
+                      <span className="bg-sky-400 text-[#021631] text-[10px] font-black px-1.5 py-0 rounded-full shadow-xs">
+                        {savedCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={onOpenGuide}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 cursor-pointer text-white/90 hover:text-white hover:bg-white/15"
+                    title="Consultar Referencial Curricular de Computação do Pará"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span className="hidden lg:inline">Referencial</span> Pará
+                  </button>
+                </>
               )}
 
-              <button
-                onClick={onNewPlan}
-                className="px-3 py-1.5 rounded-lg text-xs font-black uppercase transition-colors flex items-center gap-1.5 cursor-pointer bg-sky-400 hover:bg-sky-300 text-[#021631] shadow-sm active:scale-95"
-                title="Iniciar novo plano"
-              >
-                <PlusCircle className="w-3.5 h-3.5 text-[#021631]" />
-                <span className="text-[#021631] font-black">Novo</span>
-              </button>
+              {/* In Monitoring Panel Indicator */}
+              {activeView === 'monitoring' && (
+                <div className="px-2.5 py-1 rounded-lg bg-amber-400/20 border border-amber-300/30 text-amber-200 text-xs font-bold flex items-center gap-1.5">
+                  <LayoutDashboard className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Painel de Monitoramento</span>
+                </div>
+              )}
 
-              <button
-                onClick={onOpenHistory}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 relative cursor-pointer text-white/90 hover:text-white hover:bg-white/15"
-                title="Ver planos salvos"
-              >
-                <History className="w-3.5 h-3.5" />
-                Salvos
-                {savedCount > 0 && (
-                  <span className="bg-sky-400 text-[#021631] text-[10px] font-black px-1.5 py-0 rounded-full shadow-xs">
-                    {savedCount}
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={onOpenGuide}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold uppercase transition-colors flex items-center gap-1.5 cursor-pointer text-white/90 hover:text-white hover:bg-white/15"
-                title="Consultar Referencial Curricular de Computação do Pará"
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span className="hidden lg:inline">Referencial</span> Pará
-              </button>
+              {/* In Admin Panel Indicator */}
+              {activeView === 'admin' && (
+                <div className="px-2.5 py-1 rounded-lg bg-purple-400/20 border border-purple-300/30 text-purple-200 text-xs font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-300" />
+                  <span>Painel Administrativo</span>
+                </div>
+              )}
             </div>
           )}
 
