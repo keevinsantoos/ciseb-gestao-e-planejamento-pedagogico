@@ -127,17 +127,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       {/* ── CONTROLES E IDENTIFICAÇÃO DA UNIDADE ATUAL (CARROSSEL) ────────── */}
       {slides.length > 1 && (
         <div className="absolute bottom-6 left-0 right-0 z-10 flex flex-col items-center gap-2 pointer-events-auto">
-          {/* Tag discreta com a unidade escolar da foto */}
-          {activeSlide && (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/60 backdrop-blur-md border border-white/10 text-white/80 shadow-md">
-              <School className="w-3 h-3 text-sky-400" />
-              <span className="text-[11px] font-medium tracking-wide">
-                {activeSlide.unitName}
-                {activeSlide.municipio ? ` · ${activeSlide.municipio}` : ''}
-              </span>
-            </div>
-          )}
-
           {/* Indicadores e setas de navegação */}
           <div className="flex items-center gap-3 mt-0.5">
             <button

@@ -69,7 +69,7 @@ export const Hub: React.FC<HubProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           
           <ToolCard
-            title="Plano de Aula"
+            title="Plano de Trabalho"
             description="Planeje e organize suas atividades pedagógicas com base na BNCC Computação, Cultura Maker e Design Thinking."
             icon={FileText}
             status="available"
