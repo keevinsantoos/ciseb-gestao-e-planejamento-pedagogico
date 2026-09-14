@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- NOTEBOOK OFICIAL CISEB -->
+  <g fill="none" stroke="#005BAC" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Moldura Externa da Tela -->
+    <rect x="42" y="30" width="116" height="88" rx="14" />
+    <!-- Tela Interna -->
+    <rect x="56" y="44" width="88" height="60" rx="4" />
+    <!-- Base / Teclado Trapezoidal -->
+    <path d="M 44 118 L 26 150 L 174 150 L 156 118 Z" />
+    <!-- Linha Inferior de Suporte -->
+    <line x1="26" y1="164" x2="174" y2="164" stroke-width="8" />
+  </g>
+</svg>

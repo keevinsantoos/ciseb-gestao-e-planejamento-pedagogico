@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- BRACO ROBOTICO OFICIAL CISEB -->
+  <g fill="none" stroke="#005BAC" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Base de Apoio -->
+    <path d="M 68 172 L 132 172" stroke-width="10" />
+    <path d="M 80 172 L 80 152 C 80 142 90 136 100 136 C 110 136 120 142 120 152 L 120 172" />
+    
+    <!-- Junta 1 (Base) -->
+    <circle cx="100" cy="150" r="10" stroke-width="8" />
+
+    <!-- Braco Inferior Diagonal -->
+    <path d="M 94 142 L 56 82" stroke-width="10" />
+
+    <!-- Junta 2 (Cotovelo) -->
+    <circle cx="56" cy="80" r="16" stroke-width="8" />
+    <circle cx="56" cy="80" r="6" stroke-width="6" />
+
+    <!-- Braco Intermediario Superior -->
+    <path d="M 66 68 L 106 36" stroke-width="10" />
+
+    <!-- Junta 3 (Punho Superior) -->
+    <circle cx="110" cy="34" r="14" stroke-width="8" />
+    <circle cx="110" cy="34" r="5" stroke-width="5" />
+
+    <!-- Haste do Punho a Garra -->
+    <path d="M 120 42 L 148 68" stroke-width="8" />
+    
+    <!-- Junta da Garra -->
+    <circle cx="150" cy="70" r="8" stroke-width="6" />
+
+    <!-- Dedo Superior da Garra -->
+    <path d="M 158 64 L 180 62 L 186 86" stroke-width="8" />
+    
+    <!-- Dedo Inferior da Garra -->
+    <path d="M 148 78 L 144 100 L 170 106" stroke-width="8" />
+  </g>
+</svg>

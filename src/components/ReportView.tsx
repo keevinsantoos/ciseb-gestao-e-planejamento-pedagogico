@@ -5,7 +5,6 @@ import {
   Printer,
   Copy,
   Check,
-  Download,
   Edit3,
   FileCheck,
   Building2,
@@ -23,7 +22,13 @@ export const ReportView: React.FC<ReportViewProps> = ({ plan, onEdit }) => {
   const [copied, setCopied] = useState(false);
 
   const handlePrint = () => {
-    window.print();
+    try {
+      window.focus();
+      window.print();
+    } catch (err) {
+      console.warn('[Print] Erro ao invocar window.print():', err);
+      window.print();
+    }
   };
 
   const generateMarkdownReport = () => {
@@ -92,16 +97,6 @@ ${plan.expectativaAprendizagem || 'Sem registro'}
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleExportJson = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(plan, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `Plano_CISEB_${plan.tituloSuporte.replace(/\s+/g, '_') || 'Sem_Titulo'}.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
   return (
     <div className="max-w-4xl mx-auto py-5 px-3 sm:px-4 space-y-4">
       {/* Top Action Controls (hidden when printing) */}
@@ -123,16 +118,8 @@ ${plan.expectativaAprendizagem || 'Sem registro'}
           </button>
 
           <button
-            onClick={handleExportJson}
-            className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-white font-bold uppercase rounded-lg transition-all flex items-center gap-1.5 cursor-pointer border border-white/15"
-          >
-            <Download className="w-3.5 h-3.5" />
-            JSON
-          </button>
-
-          <button
             onClick={handlePrint}
-            className="px-3.5 py-1.5 bg-[#78BC61] hover:bg-green-600 text-white font-black uppercase rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-1.5 bg-[#78BC61] hover:bg-green-600 text-white font-black uppercase rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
           >
             <Printer className="w-3.5 h-3.5" />
             IMPRIMIR / PDF

@@ -7,6 +7,7 @@ import {
   TEMAS_IMERSAO_OPTIONS,
   AuthUser,
   isPlanOwnedByUser,
+  DEFAULT_MAG_EXTERNAL_URL,
 } from './types';
 import { Header } from './components/Header';
 import { SessionForm } from './components/SessionForm';
@@ -18,9 +19,12 @@ import { LoginScreen } from './components/LoginScreen';
 import { MonitoringDashboard } from './components/MonitoringDashboard';
 import { AccountManagerModal } from './components/AccountManagerModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
+import { UnitSelectorModal } from './components/UnitSelectorModal';
+import { QuestionBox } from './components/QuestionBox';
 import { subscribePlans, savePlanToFirestore, deletePlanFromFirestore } from './services/firestoreService';
 import { useAuth } from './hooks/useAuth';
-import { Sparkles } from 'lucide-react';
+import { safeJsonFetch } from './lib/apiUtils';
+import { Sparkles, ExternalLink } from 'lucide-react';
 import magAvatar from './assets/images/mag_avatar_v2_1786994402829.jpg';
 
 const LOCAL_STORAGE_KEY = 'ciseb_saved_plans_v1';
@@ -108,6 +112,7 @@ export default function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isAccountsModalOpen, setIsAccountsModalOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
@@ -244,32 +249,37 @@ export default function App() {
     }
 
     try {
-      const response = await fetch('/api/gemini/generate-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt,
-          currentPlan,
-        }),
-      });
+      const result = await safeJsonFetch<{ success: boolean; plan: any; error?: string }>(
+        '/api/gemini/generate-plan',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt,
+            currentPlan,
+          }),
+        }
+      );
 
-      const data = await response.json();
-      if (data.success && data.plan) {
+      if (result.ok && result.data?.success && result.data.plan) {
+        const planData = result.data.plan;
         setCurrentPlan((prev) => ({
           ...prev,
-          ...data.plan,
+          ...planData,
           // Preserve arrays if valid
-          bnccCompetencias: Array.isArray(data.plan.bnccCompetencias) && data.plan.bnccCompetencias.length ? data.plan.bnccCompetencias : prev.bnccCompetencias,
-          bnccHabilidadesEixo: Array.isArray(data.plan.bnccHabilidadesEixo) && data.plan.bnccHabilidadesEixo.length ? data.plan.bnccHabilidadesEixo : prev.bnccHabilidadesEixo,
-          odsAplicada: Array.isArray(data.plan.odsAplicada) && data.plan.odsAplicada.length ? data.plan.odsAplicada : prev.odsAplicada,
+          bnccCompetencias: Array.isArray(planData.bnccCompetencias) && planData.bnccCompetencias.length ? planData.bnccCompetencias : prev.bnccCompetencias,
+          bnccHabilidadesEixo: Array.isArray(planData.bnccHabilidadesEixo) && planData.bnccHabilidadesEixo.length ? planData.bnccHabilidadesEixo : prev.bnccHabilidadesEixo,
+          odsAplicada: Array.isArray(planData.odsAplicada) && planData.odsAplicada.length ? planData.odsAplicada : prev.odsAplicada,
           updatedAt: new Date().toISOString(),
         }));
       } else {
-        alert('Não foi possível gerar com a IA no momento. Verifique se a chave GEMINI_API_KEY está configurada.');
+        const errorMsg = result.error || result.data?.error || 'Não foi possível gerar com a IA no momento.';
+        console.warn('[AI Plan Generation]', errorMsg);
+        alert(errorMsg);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro na chamada da IA:', error);
-      alert('Erro de comunicação com a IA. Tente novamente.');
+      alert(error?.message || 'Erro de comunicação com a IA. Tente novamente.');
     } finally {
       setIsAiLoading(false);
     }
@@ -326,6 +336,7 @@ export default function App() {
         onToggleAiDrawer={() => setIsAiDrawerOpen(!isAiDrawerOpen)}
         onOpenPrint={() => setActiveView('report')}
         onOpenAccountsModal={() => setIsAccountsModalOpen(true)}
+        onOpenUnitModal={() => setIsUnitModalOpen(true)}
         onChangePassword={() => setIsChangePasswordOpen(true)}
         activeView={activeView}
         setActiveView={setActiveView}
@@ -340,9 +351,15 @@ export default function App() {
       />
 
       {/* Main View Area */}
-      <main className="flex-1 pb-16">
+      <main className="flex-1 pb-16 print:pb-0 print:m-0">
         {activeView === 'monitoring' ? (
-          <MonitoringDashboard user={currentUser} onLogout={handleLogout} theme={theme} onToggleTheme={toggleTheme} />
+          <MonitoringDashboard
+            user={currentUser}
+            onLogout={handleLogout}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            plans={savedPlans}
+          />
         ) : activeView === 'edit' ? (
           <SessionForm
             plan={currentPlan}
@@ -405,12 +422,36 @@ export default function App() {
         forcedMode={!!mustChangePassword}
       />
 
+      <UnitSelectorModal
+        isOpen={isUnitModalOpen}
+        onClose={() => setIsUnitModalOpen(false)}
+        currentUser={currentUser}
+        onProfileUpdated={(updated) => {
+          setCurrentUser(updated);
+          // Sync current plan if empty or matching old values
+          setCurrentPlan((prev) => ({
+            ...prev,
+            unidadeCiseb: updated.unidadeCiseb || prev.unidadeCiseb,
+            professorFormador: updated.nome || prev.professorFormador,
+            authorNome: updated.nome || prev.authorNome,
+          }));
+        }}
+      />
 
-      {/* Floating MAG AI Assistant Button at the Bottom */}
+
+      {/* Floating Question & Pedagogical Support Box (MorphSurface) */}
+      <QuestionBox
+        currentUser={currentUser}
+        className="fixed bottom-6 left-6 z-40 print:hidden"
+      />
+
+      {/* Floating MAG AI Assistant Button at the Bottom (External Link) */}
       <button
-        onClick={() => setIsAiDrawerOpen(true)}
-        className="fixed bottom-6 right-6 z-40 group pl-2 pr-4 py-2 rounded-2xl bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 text-[#005BAC] dark:text-sky-300 font-black text-xs uppercase shadow-2xl shadow-slate-900/30 dark:shadow-black/50 hover:shadow-[0_0_28px_rgba(0,91,172,0.45)] hover:-translate-y-1 active:translate-y-0 transition-all duration-300 flex items-center gap-3 cursor-pointer border border-[#005BAC]/20 dark:border-sky-500/30 ring-4 ring-[#005BAC]/10 dark:ring-sky-400/10 animate-in fade-in slide-in-from-bottom-4"
-        title="Conheça a MAG - Assistente Pedagógica com IA"
+        type="button"
+        onClick={() => window.open(DEFAULT_MAG_EXTERNAL_URL, '_blank', 'noopener,noreferrer')}
+        className="fixed bottom-6 right-6 z-40 group pl-2 pr-4 py-2 rounded-2xl bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 text-[#005BAC] dark:text-sky-300 font-black text-xs uppercase shadow-2xl shadow-slate-900/30 dark:shadow-black/50 hover:shadow-[0_0_28px_rgba(0,91,172,0.45)] hover:-translate-y-1 active:translate-y-0 transition-all duration-300 flex items-center gap-3 cursor-pointer border border-[#005BAC]/20 dark:border-sky-500/30 ring-4 ring-[#005BAC]/10 dark:ring-sky-400/10 animate-in fade-in slide-in-from-bottom-4 print:hidden"
+        title="Abrir a MAG (Assistente Pedagógica com IA) em nova aba"
+        aria-label="Abrir a MAG Mentora Pedagógica em nova aba"
       >
         <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border-2 border-[#005BAC]/30 dark:border-sky-400/40 shadow-sm relative z-10 bg-sky-100 dark:bg-slate-700 ring-2 ring-white dark:ring-slate-800">
           <img
@@ -421,7 +462,9 @@ export default function App() {
           />
         </div>
         <div className="text-left">
-          <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-bold normal-case tracking-normal -mb-0.5">Assistente IA</span>
+          <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-bold normal-case tracking-normal -mb-0.5 flex items-center gap-1">
+            Assistente IA <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+          </span>
           <span className="tracking-tight text-xs font-black text-[#005BAC] dark:text-sky-300">Conheça a MAG</span>
         </div>
         <Sparkles className="w-4 h-4 text-amber-500 dark:text-amber-400 animate-pulse shrink-0 ml-0.5" />

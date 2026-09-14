@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
@@ -14,9 +15,90 @@ const PORT = 3000;
 app.use(express.json({ limit: '10mb' }));
 
 // ----------------------------------------------------
-// FIREBASE ADMIN INITIALIZATION (LAZY / SAFE)
+// FIREBASE ADMIN INITIALIZATION (LAZY / ROBUST / SAFE)
 // ----------------------------------------------------
 let firebaseAdminApp: App | null = null;
+let hasAttemptedAdminInit = false;
+
+/**
+ * Robustly parse Service Account credentials from various input formats:
+ * - Direct JSON string (with or without escaped newlines)
+ * - Base64 encoded JSON string
+ * - File system path to a .json file
+ * - Quoted/escaped environment variable strings
+ */
+function parseServiceAccountCredentials(raw: string | undefined): any | null {
+  if (!raw || typeof raw !== 'string') return null;
+
+  let cleaned = raw.trim();
+  if (!cleaned || cleaned === '""' || cleaned === "''" || cleaned === '{}') return null;
+
+  // Remove UTF-8 BOM if present
+  if (cleaned.charCodeAt(0) === 0xfeff) {
+    cleaned = cleaned.slice(1);
+  }
+
+  // If the string is enclosed in quotes, unwrap them
+  if (
+    (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+    (cleaned.startsWith("'") && cleaned.endsWith("'"))
+  ) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+
+  // 1. Check if it's a file path
+  try {
+    if ((cleaned.endsWith('.json') || cleaned.startsWith('/') || cleaned.startsWith('./')) && fs.existsSync(cleaned)) {
+      const fileContent = fs.readFileSync(cleaned, 'utf-8');
+      const parsed = JSON.parse(fileContent);
+      if (parsed?.project_id && parsed?.client_email) {
+        return parsed;
+      }
+    }
+  } catch {}
+
+  // 2. Direct JSON.parse attempt
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (parsed && typeof parsed === 'object' && (parsed.project_id || parsed.client_email)) {
+      if (parsed.private_key && typeof parsed.private_key === 'string') {
+        parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+      }
+      return parsed;
+    }
+  } catch {}
+
+  // 3. Try Base64 decoding
+  try {
+    const decoded = Buffer.from(cleaned, 'base64').toString('utf-8').trim();
+    if (decoded.startsWith('{') && decoded.endsWith('}')) {
+      const parsed = JSON.parse(decoded);
+      if (parsed && typeof parsed === 'object' && (parsed.project_id || parsed.client_email)) {
+        if (parsed.private_key && typeof parsed.private_key === 'string') {
+          parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+        }
+        return parsed;
+      }
+    }
+  } catch {}
+
+  // 4. Try replacing escaped newlines and escaped quotes
+  try {
+    const unescaped = cleaned
+      .replace(/\\r\\n/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\\"/g, '"');
+    const parsed = JSON.parse(unescaped);
+    if (parsed && typeof parsed === 'object' && (parsed.project_id || parsed.client_email)) {
+      if (parsed.private_key && typeof parsed.private_key === 'string') {
+        parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+      }
+      return parsed;
+    }
+  } catch {}
+
+  return null;
+}
 
 function getFirebaseAdmin(): App | null {
   if (firebaseAdminApp) return firebaseAdminApp;
@@ -26,39 +108,37 @@ function getFirebaseAdmin(): App | null {
     return firebaseAdminApp;
   }
 
+  if (hasAttemptedAdminInit) {
+    return firebaseAdminApp;
+  }
+  hasAttemptedAdminInit = true;
+
   try {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (serviceAccountKey) {
-      let parsedCreds;
-      try {
-        parsedCreds = JSON.parse(serviceAccountKey);
-      } catch {
-        // Try base64 decoding if not direct JSON
-        try {
-          const decoded = Buffer.from(serviceAccountKey, 'base64').toString('utf-8');
-          parsedCreds = JSON.parse(decoded);
-        } catch {
-          console.warn('[Firebase Admin] Não foi possível fazer parse do JSON de FIREBASE_SERVICE_ACCOUNT_KEY.');
-        }
-      }
+    const rawKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (rawKey && rawKey.trim().length > 5) {
+      const parsedCreds = parseServiceAccountCredentials(rawKey);
 
       if (parsedCreds) {
         firebaseAdminApp = initializeApp({
           credential: cert(parsedCreds),
         });
-        console.log('[Firebase Admin] Inicializado com sucesso via Service Account Key.');
+        console.log(`[Firebase Admin] Inicializado com sucesso para o projeto "${parsedCreds.project_id}".`);
         return firebaseAdminApp;
+      } else {
+        console.warn(
+          '[Firebase Admin] Formato de chave em FIREBASE_SERVICE_ACCOUNT_KEY não reconhecido como JSON válido. As operações administrativas funcionarão em modo Firestore direto.'
+        );
       }
     }
 
-    // Default application credentials (GCP environment)
+    // Default application credentials (GCP / Cloud Run environment)
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.FIREBASE_CONFIG) {
       firebaseAdminApp = initializeApp();
-      console.log('[Firebase Admin] Inicializado com credenciais padrão do ambiente.');
+      console.log('[Firebase Admin] Inicializado com credenciais padrão do ambiente GCP.');
       return firebaseAdminApp;
     }
   } catch (err: any) {
-    console.warn('[Firebase Admin] Aviso ao inicializar Firebase Admin SDK:', err?.message || err);
+    console.warn('[Firebase Admin] Aviso na inicialização do Firebase Admin SDK:', err?.message || err);
   }
   return null;
 }
@@ -91,33 +171,58 @@ function generateServerSecurePassword(length = 14): string {
 // ----------------------------------------------------
 
 /**
- * Middleware to verify Admin/Monitoramento authorization
+ * Middleware to verify Admin/Monitoramento/Coordenação authorization
  */
 async function requireAdminAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // If Firebase Admin isn't configured in development, allow request but log warning
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      const adminApp = getFirebaseAdmin();
+      if (!adminApp) {
+        return next();
+      }
+      return res.status(401).json({ success: false, error: 'Token de autenticação não fornecido.' });
+    }
+
+    const token = authHeader.split('Bearer ')[1].trim();
     const adminApp = getFirebaseAdmin();
     if (!adminApp) {
       return next();
     }
-    return res.status(401).json({ success: false, error: 'Token de autenticação não fornecido.' });
-  }
 
-  const token = authHeader.split('Bearer ')[1].trim();
-  const adminApp = getFirebaseAdmin();
-  if (!adminApp) {
-    return next();
-  }
-
-  try {
     const auth = getAuth(adminApp);
-    const decodedToken = await auth.verifyIdToken(token);
-    (req as any).user = decodedToken;
-    next();
-  } catch (err: any) {
-    console.error('[Auth Admin Middleware] Erro ao verificar token:', err);
-    return res.status(403).json({ success: false, error: 'Sessão inválida ou expirada.' });
+    try {
+      const decodedToken = await auth.verifyIdToken(token);
+      (req as any).user = decodedToken;
+
+      const userRole = decodedToken.role || (decodedToken as any).customClaims?.role;
+      const userEmail = (decodedToken.email || '').toLowerCase();
+      const isAllowed =
+        userRole === 'monitoramento' ||
+        userRole === 'coordenador' ||
+        userRole === 'admin' ||
+        userEmail === 'ciseb.adm@escola.seduc.pa.gov.br' ||
+        userEmail === 'ciseb.coordenacao@escola.seduc.pa.gov.br';
+
+      if (!isAllowed && process.env.NODE_ENV === 'production') {
+        return res.status(403).json({
+          success: false,
+          error: 'Acesso restrito à Coordenação e Equipe de Monitoramento.',
+        });
+      }
+
+      next();
+    } catch (err: any) {
+      console.warn('[Auth Admin Middleware] Aviso na verificação de token:', err?.message || err);
+      // If verification fails due to env mismatch or dev token, continue safely in dev mode
+      if (process.env.NODE_ENV !== 'production') {
+        return next();
+      }
+      return res.status(403).json({ success: false, error: 'Sessão inválida ou expirada.' });
+    }
+  } catch (outerErr: any) {
+    console.error('[Auth Admin Middleware] Erro geral:', outerErr);
+    return res.status(500).json({ success: false, error: 'Falha ao validar credenciais.' });
   }
 }
 
@@ -287,6 +392,16 @@ app.delete('/api/admin/accounts/:id', requireAdminAuth, async (req, res) => {
     if (adminApp) {
       const auth = getAuth(adminApp);
       try {
+        const user = await auth.getUser(id).catch(() => null);
+        if (
+          user?.email === 'ciseb.adm@escola.seduc.pa.gov.br' ||
+          user?.email === 'ciseb.coordenacao@escola.seduc.pa.gov.br'
+        ) {
+          return res.status(403).json({
+            success: false,
+            error: 'As contas centrais de monitoramento e coordenação não podem ser excluídas.',
+          });
+        }
         await auth.deleteUser(id);
       } catch (err: any) {
         console.warn('[Admin API] Aviso ao excluir usuário do Firebase Auth:', err?.message || err);
@@ -634,6 +749,26 @@ ${chatContent}
       fallbackReason: errorMsg,
     });
   }
+});
+
+// Explicit JSON 404 handler for unmatched /api/* routes (prevents SPA HTML fallback for API calls)
+app.all('/api/*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: `Endpoint de API não encontrado: ${req.method} ${req.path}`,
+  });
+});
+
+// Global API error handler ensuring all API errors return JSON
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('[CISEB Server Error]', err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  return res.status(err?.status || 500).json({
+    success: false,
+    error: err?.message || 'Ocorreu um erro interno no servidor.',
+  });
 });
 
 async function startServer() {

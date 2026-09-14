@@ -3,6 +3,7 @@ import { ChatMessage, CisebSessionPlan } from '../types';
 import { Sparkles, Send, X, Bot, User, RefreshCw, Lightbulb, RotateCcw, AlertTriangle } from 'lucide-react';
 import Markdown from 'react-markdown';
 import magAvatar from '../assets/images/mag_avatar_v2_1786994402829.jpg';
+import { safeJsonFetch } from '../lib/apiUtils';
 
 interface AiCopilotDrawerProps {
   isOpen: boolean;
@@ -88,28 +89,30 @@ Como podemos iniciar a Fase 1 (Empatia)? Quais alternativas de abordagem você s
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/gemini/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [...messages, userMsg],
-          currentPlan: plan,
-        }),
-      });
+      const result = await safeJsonFetch<{ success: boolean; reply: string; isFallback?: boolean; fallbackReason?: string; error?: string }>(
+        '/api/gemini/chat',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [...messages, userMsg],
+            currentPlan: plan,
+          }),
+        }
+      );
 
-      const data = await res.json();
-      if (data.success) {
+      if (result.ok && result.data?.success) {
         const botMsg: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: data.reply,
+          content: result.data.reply,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isFallback: Boolean(data.isFallback),
-          fallbackReason: data.fallbackReason,
+          isFallback: Boolean(result.data.isFallback),
+          fallbackReason: result.data.fallbackReason,
         };
         setMessages((prev) => [...prev, botMsg]);
       } else {
-        throw new Error(data.error || 'Falha ao processar resposta.');
+        throw new Error(result.error || result.data?.error || 'Falha ao processar resposta.');
       }
     } catch (err: any) {
       const errorMsg = err?.message || '';

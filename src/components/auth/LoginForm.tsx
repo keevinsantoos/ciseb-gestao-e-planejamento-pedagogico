@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { AuthUser } from '../../types';
+import { AuthUser, UNIDADES_CISEB_OPTIONS, PROFESSORES_FORMADORES_OPTIONS } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
+import { User as FirebaseUser } from 'firebase/auth';
 import {
   Mail,
   Lock,
@@ -13,6 +14,11 @@ import {
   HelpCircle,
   X,
   KeyRound,
+  Building2,
+  School,
+  Search,
+  UserCheck,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface LoginFormProps {
@@ -24,7 +30,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onLoginSuccess,
   onSwitchToRegister,
 }) => {
-  const { login, loginGoogle, resetPassword } = useAuth();
+  const { login, loginGoogle, signInGoogleCredential, registerGoogleAccount, resetPassword } = useAuth();
 
   // Form Fields
   const [emailInput, setEmailInput] = useState('');
@@ -37,27 +43,87 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Google Onboarding Modal (for selecting Unidade CISEB on Google Auth)
+  const [googleOnboardingUser, setGoogleOnboardingUser] = useState<{
+    fbUser: FirebaseUser;
+    nome: string;
+    email: string;
+  } | null>(null);
+  const [googleSelectedUnit, setGoogleSelectedUnit] = useState<string>(UNIDADES_CISEB_OPTIONS[0]);
+  const [googleUnitSearch, setGoogleUnitSearch] = useState('');
+  const [isCompletingGoogle, setIsCompletingGoogle] = useState(false);
+
   // Forgot Password modal state
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [resetFeedback, setResetFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Google Login Submit
+  // Google Login Submit with Unit Selection Detection
   const handleGoogleLogin = async () => {
     setErrorMsg(null);
     setSuccessMsg(null);
     setIsGoogleLoading(true);
     try {
-      const user = await loginGoogle();
-      setSuccessMsg(`Bem-vindo(a), ${user.nome}!`);
-      setTimeout(() => {
-        onLoginSuccess(user);
-      }, 400);
+      const { fbUser, profile } = await signInGoogleCredential();
+      const cleanEmail = (fbUser.email || '').toLowerCase();
+
+      // Verify domain
+      if (!cleanEmail.endsWith('@escola.seduc.pa.gov.br') && !cleanEmail.endsWith('@seduc.pa.gov.br')) {
+        throw new Error('Utilize sua conta Google institucional da SEDUC (@escola.seduc.pa.gov.br ou @seduc.pa.gov.br).');
+      }
+
+      // If user profile already exists with an assigned unit
+      if (profile && profile.unidadeCiseb && profile.unidadeCiseb !== 'CISEB - COORDENAÇÃO GERAL SEDUC/PA') {
+        setSuccessMsg(`Bem-vindo(a), ${profile.nome}!`);
+        setTimeout(() => {
+          onLoginSuccess(profile);
+        }, 400);
+      } else {
+        // Prompt user to select their Unidade CISEB and confirm their name
+        setGoogleOnboardingUser({
+          fbUser,
+          nome: profile?.nome || fbUser.displayName || cleanEmail.split('@')[0].toUpperCase(),
+          email: cleanEmail,
+        });
+        if (profile?.unidadeCiseb) {
+          setGoogleSelectedUnit(profile.unidadeCiseb);
+        }
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'Erro ao autenticar com a conta Google.');
     } finally {
       setIsGoogleLoading(false);
+    }
+  };
+
+  // Complete Google Onboarding with Selected Unit
+  const handleCompleteGoogleOnboarding = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!googleOnboardingUser) return;
+
+    if (!googleSelectedUnit) {
+      setErrorMsg('Selecione a sua Unidade CISEB de atuação.');
+      return;
+    }
+
+    setIsCompletingGoogle(true);
+    setErrorMsg(null);
+    try {
+      const user = await registerGoogleAccount(
+        googleOnboardingUser.fbUser,
+        googleOnboardingUser.nome,
+        googleSelectedUnit
+      );
+      setSuccessMsg(`Cadastro concluído com sucesso! Bem-vindo(a), ${user.nome}!`);
+      setGoogleOnboardingUser(null);
+      setTimeout(() => {
+        onLoginSuccess(user);
+      }, 400);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erro ao registrar sua unidade.');
+    } finally {
+      setIsCompletingGoogle(false);
     }
   };
 
@@ -67,10 +133,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    const cleanEmail = emailInput.trim().toLowerCase();
+    let cleanEmail = emailInput.trim().toLowerCase();
     if (!cleanEmail) {
-      setErrorMsg('Informe seu e-mail institucional @escola.seduc.pa.gov.br.');
+      setErrorMsg('Informe seu usuário ou e-mail institucional.');
       return;
+    }
+
+    // Se o usuário digitar apenas o nome de usuário (sem @), anexa o domínio institucional automaticamente
+    if (!cleanEmail.includes('@')) {
+      cleanEmail = `${cleanEmail}@escola.seduc.pa.gov.br`;
     }
 
     if (!passwordInput) {
@@ -96,12 +167,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const handleSendResetEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setResetFeedback(null);
-    const cleanEmail = forgotEmail.trim().toLowerCase();
+    let cleanEmail = forgotEmail.trim().toLowerCase();
+
+    if (cleanEmail && !cleanEmail.includes('@')) {
+      cleanEmail = `${cleanEmail}@escola.seduc.pa.gov.br`;
+    }
 
     if (!cleanEmail || !cleanEmail.endsWith('@escola.seduc.pa.gov.br')) {
       setResetFeedback({
         type: 'error',
-        text: 'Informe um e-mail institucional válido (@escola.seduc.pa.gov.br).',
+        text: 'Informe um usuário ou e-mail institucional válido.',
       });
       return;
     }
@@ -126,8 +201,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   return (
     <div className="space-y-5 animate-in fade-in duration-200">
       {/* Informational Banner */}
-      <div className="p-4 bg-sky-50 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/60 rounded-2xl flex items-start gap-3 text-xs text-sky-900 dark:text-sky-200">
-        <div className="w-8 h-8 rounded-xl bg-[#005BAC]/10 dark:bg-sky-400/10 flex items-center justify-center shrink-0 text-[#005BAC] dark:text-sky-400 mt-0.5">
+      <div className="p-4 bg-sky-50/80 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/60 rounded-2xl flex items-start gap-3 text-xs text-sky-950 dark:text-sky-200 shadow-xs">
+        <div className="w-8 h-8 rounded-xl bg-[#005BAC]/10 dark:bg-sky-400/10 flex items-center justify-center shrink-0 text-[#005BAC] dark:text-sky-400 mt-0.5 border border-[#005BAC]/15 dark:border-sky-400/20">
           <KeyRound className="w-4 h-4" />
         </div>
         <div className="space-y-0.5">
@@ -142,42 +217,58 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       {/* Error & Success Messages */}
       {errorMsg && (
-        <div className="p-3.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-2xl flex items-start gap-2.5 text-xs text-red-700 dark:text-red-300 animate-in fade-in">
+        <div
+          role="alert"
+          className="p-3.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-2xl flex items-start gap-2.5 text-xs text-red-700 dark:text-red-300 animate-in fade-in shadow-xs"
+        >
           <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
           <span className="font-medium leading-tight">{errorMsg}</span>
         </div>
       )}
 
       {successMsg && (
-        <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-800 dark:text-emerald-300 animate-in fade-in">
+        <div
+          role="status"
+          className="p-3.5 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-800 dark:text-emerald-300 animate-in fade-in shadow-xs"
+        >
           <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
           <span className="font-medium leading-tight">{successMsg}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate={false}>
         {/* Email Field */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+        <div className="space-y-1.5 text-left">
+          <label
+            htmlFor="login-email-input"
+            className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5"
+          >
             <Mail className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400" />
-            <span>E-mail Institucional</span>
+            <span>Seu e-mail institucional</span>
           </label>
           <div className="relative">
             <input
+              id="login-email-input"
+              name="email"
               type="email"
+              autoComplete="username"
               value={emailInput}
               onChange={(e) => setEmailInput(e.target.value)}
-              placeholder="nome.sobrenome@escola.seduc.pa.gov.br"
+              placeholder="seu.email@escola.seduc.pa.gov.br"
               required
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#005BAC] outline-hidden transition-all font-mono"
+              disabled={isLoading || isGoogleLoading}
+              className="w-full bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#005BAC]/30 focus:border-[#005BAC] dark:focus:border-sky-400 outline-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
         </div>
 
         {/* Password Field */}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 text-left">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <label
+              htmlFor="login-password-input"
+              className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5"
+            >
               <Lock className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400" />
               <span>Senha de Acesso</span>
             </label>
@@ -187,25 +278,30 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 setForgotEmail(emailInput);
                 setIsForgotModalOpen(true);
               }}
-              className="text-[11px] font-bold text-[#005BAC] dark:text-sky-400 hover:underline cursor-pointer"
+              className="text-xs font-bold text-[#005BAC] dark:text-sky-400 hover:text-[#004e96] dark:hover:text-sky-300 hover:underline cursor-pointer focus:outline-none"
             >
               Esqueceu a senha?
             </button>
           </div>
           <div className="relative">
             <input
+              id="login-password-input"
+              name="password"
               type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
               value={passwordInput}
               onChange={(e) => setPasswordInput(e.target.value)}
               placeholder="Digite sua senha"
               required
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-3 pr-10 py-2.5 text-xs font-mono text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#005BAC] outline-hidden transition-all"
+              disabled={isLoading || isGoogleLoading}
+              className="w-full bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl pl-4 pr-11 py-3 text-sm font-mono text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-[#005BAC]/30 focus:border-[#005BAC] dark:focus:border-sky-400 outline-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer focus:outline-none"
               title={showPassword ? 'Ocultar senha' : 'Ver senha'}
+              aria-label={showPassword ? 'Ocultar senha digitada' : 'Exibir senha digitada'}
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -216,7 +312,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         <button
           type="submit"
           disabled={isLoading || isGoogleLoading}
-          className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#005BAC] to-[#013780] hover:from-[#004e96] hover:to-[#012d6a] text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-[#005BAC]/20 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#005BAC] via-[#004e96] to-[#013780] hover:from-[#004e96] hover:via-[#013780] hover:to-[#012d6a] text-white font-bold text-sm tracking-wide shadow-lg shadow-[#005BAC]/20 hover:shadow-xl hover:shadow-[#005BAC]/30 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-[#005BAC] focus:ring-offset-2 dark:focus:ring-offset-slate-900 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? (
             <>
@@ -234,7 +330,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         {/* Divider */}
         <div className="relative flex py-1 items-center">
           <div className="grow border-t border-slate-200 dark:border-slate-700"></div>
-          <span className="shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">ou</span>
+          <span className="shrink mx-3 text-xs font-bold uppercase tracking-wider text-slate-400">ou</span>
           <div className="grow border-t border-slate-200 dark:border-slate-700"></div>
         </div>
 
@@ -243,7 +339,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           type="button"
           onClick={handleGoogleLogin}
           disabled={isLoading || isGoogleLoading}
-          className="w-full py-2.5 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-sm hover:shadow transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
+          className="w-full py-3 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-500 text-slate-800 dark:text-slate-100 font-bold text-sm shadow-xs hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#005BAC]/20 transition-all duration-200 flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
         >
           {isGoogleLoading ? (
             <>
@@ -252,7 +348,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </>
           ) : (
             <>
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -349,34 +445,38 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               )}
 
               <div>
-                <label className="block text-[11px] font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
-                  E-mail Institucional (@escola.seduc.pa.gov.br)
+                <label
+                  htmlFor="forgot-email-input"
+                  className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+                >
+                  Seu e-mail institucional
                 </label>
                 <input
+                  id="forgot-email-input"
                   type="email"
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="seu.nome@escola.seduc.pa.gov.br"
+                  placeholder="seu.email@escola.seduc.pa.gov.br"
                   required
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-900 dark:text-white focus:ring-2 focus:ring-[#005BAC] outline-hidden"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-[#005BAC]/30 focus:border-[#005BAC] dark:focus:border-sky-400 outline-none transition-all"
                 />
               </div>
 
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => {
                     setIsForgotModalOpen(false);
                     setResetFeedback(null);
                   }}
-                  className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
+                  className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                 >
                   Fechar
                 </button>
                 <button
                   type="submit"
                   disabled={isSendingReset}
-                  className="flex-1 py-2.5 px-4 rounded-xl bg-[#005BAC] hover:bg-[#004e96] text-white font-bold text-xs shadow-md shadow-[#005BAC]/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#005BAC] to-[#013780] hover:from-[#004e96] hover:to-[#012d6a] text-white font-bold text-xs shadow-md shadow-[#005BAC]/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {isSendingReset ? (
                     <>
@@ -385,6 +485,164 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                     </>
                   ) : (
                     <span>Enviar Link</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Google Authentication - Unidade CISEB Selection Modal */}
+      {googleOnboardingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-gradient-to-r from-[#005BAC] to-[#013780] p-5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 shadow-xs">
+                  <Building2 className="w-5 h-5 text-amber-300" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-white">Selecione sua Unidade CISEB</h3>
+                  <p className="text-xs text-sky-100">
+                    Acesso institucional Google SEDUC/PA
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setGoogleOnboardingUser(null)}
+                className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
+                aria-label="Fechar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCompleteGoogleOnboarding} className="p-5 space-y-4 overflow-y-auto flex-1 text-slate-800 dark:text-slate-100">
+              <div className="p-3 bg-sky-50 dark:bg-sky-950/40 rounded-2xl border border-sky-200/80 dark:border-sky-900/60 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-sky-500 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                  {googleOnboardingUser.nome.charAt(0)}
+                </div>
+                <div className="min-w-0 text-xs">
+                  <p className="font-bold text-slate-900 dark:text-white truncate">
+                    {googleOnboardingUser.nome}
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
+                    {googleOnboardingUser.email}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="google-user-name-input"
+                  className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+                >
+                  Confirmar Nome do(a) Formador(a)
+                </label>
+                <input
+                  id="google-user-name-input"
+                  type="text"
+                  list="professores-login-options"
+                  value={googleOnboardingUser.nome}
+                  onChange={(e) =>
+                    setGoogleOnboardingUser({
+                      ...googleOnboardingUser,
+                      nome: e.target.value.toUpperCase(),
+                    })
+                  }
+                  required
+                  placeholder="SEU NOME COMPLETO"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-white uppercase focus:ring-2 focus:ring-[#005BAC]/30 focus:border-[#005BAC] dark:focus:border-sky-400 outline-none transition-all"
+                />
+                <datalist id="professores-login-options">
+                  {PROFESSORES_FORMADORES_OPTIONS.map((p) => (
+                    <option key={p} value={p} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  Sua Unidade CISEB de Lotação:
+                </label>
+
+                {/* Filter */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Buscar unidade CISEB..."
+                    value={googleUnitSearch}
+                    onChange={(e) => setGoogleUnitSearch(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-[#005BAC]/30 focus:border-[#005BAC] dark:focus:border-sky-400 outline-none transition-all"
+                  />
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                </div>
+
+                {/* List */}
+                <div className="max-h-48 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-xl divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-800/40 shadow-inner">
+                  {UNIDADES_CISEB_OPTIONS.filter((u) =>
+                    u.toLowerCase().includes(googleUnitSearch.toLowerCase().trim())
+                  ).map((u) => {
+                    const isSelected = googleSelectedUnit === u;
+                    return (
+                      <button
+                        key={u}
+                        type="button"
+                        onClick={() => setGoogleSelectedUnit(u)}
+                        className={`w-full text-left px-3.5 py-2.5 text-xs transition-colors flex items-center justify-between gap-2 cursor-pointer ${
+                          isSelected
+                            ? 'bg-sky-50 dark:bg-sky-950/60 font-bold text-[#005BAC] dark:text-sky-300'
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 truncate">
+                          <School
+                            className={`w-3.5 h-3.5 shrink-0 ${
+                              isSelected ? 'text-[#005BAC] dark:text-sky-400' : 'text-slate-400'
+                            }`}
+                          />
+                          <span className="truncate">{u}</span>
+                        </div>
+                        {isSelected && (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50/70 dark:bg-amber-950/30 rounded-xl border border-amber-200/60 dark:border-amber-900/40 flex items-start gap-2 text-[11px] text-amber-900 dark:text-amber-200">
+                <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <p>
+                  Esta unidade será vinculada ao seu e-mail institucional e atribuída aos seus novos planos pedagógicos.
+                </p>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setGoogleOnboardingUser(null)}
+                  className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCompletingGoogle || !googleSelectedUnit}
+                  className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#005BAC] to-[#013780] hover:from-[#004e96] hover:to-[#012d6a] text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-[#005BAC]/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isCompletingGoogle ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Salvando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Confirmar e Entrar</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </>
                   )}
                 </button>
               </div>

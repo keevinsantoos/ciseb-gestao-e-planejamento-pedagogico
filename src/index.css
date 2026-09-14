@@ -270,21 +270,56 @@ html.dark .shadow-2xl {
 
 /* High-contrast Print Mode Override (always clean light paper for official documents) */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
   html,
   html.dark,
   body {
     color-scheme: light !important;
     background-color: #ffffff !important;
+    background: #ffffff !important;
     color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
+
+  /* Force white paper background and remove dark mode overrides on print */
   html.dark .bg-white {
     background-color: #ffffff !important;
   }
+
+  html.dark .bg-slate-50 {
+    background-color: #f8fafc !important;
+  }
+
+  html.dark .border-slate-200 {
+    border-color: #e2e8f0 !important;
+  }
+
   html.dark .text-slate-800,
   html.dark .text-slate-900,
-  html.dark .text-slate-700,
+  html.dark .text-slate-700 {
+    color: #0f172a !important;
+  }
+
+  html.dark .text-slate-400,
+  html.dark .text-slate-500 {
+    color: #64748b !important;
+  }
+
   html.dark .text-\[\#005BAC\] {
-    color: #000000 !important;
+    color: #005BAC !important;
+  }
+
+  /* Reset layout constraints for full-page paper printing */
+  .max-w-4xl {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }
 

@@ -14,9 +14,15 @@ import {
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { AuthUser, CisebRegisteredAccount } from '../types';
-import { getRegisteredAccounts, DEFAULT_INITIAL_ACCOUNTS } from '../data/cisebAccounts';
+import {
+  getRegisteredAccounts,
+  DEFAULT_INITIAL_ACCOUNTS,
+  CISEB_ACCOUNTS_STORAGE_KEY,
+} from '../data/cisebAccounts';
+import { safeJsonFetch } from '../lib/apiUtils';
 
 const ACCOUNTS_COLLECTION = 'accounts';
+const AUTH_STORAGE_KEY = 'ciseb_auth_user_v1';
 
 /**
  * Format Firebase Auth errors into friendly user messages
@@ -374,21 +380,23 @@ export async function adminCreateAccount(payload: {
 }): Promise<{ success: boolean; tempPassword?: string; account?: CisebRegisteredAccount; error?: string }> {
   try {
     const headers = await getAdminHeaders();
-    const res = await fetch('/api/admin/accounts', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    });
+    const result = await safeJsonFetch<{ success: boolean; tempPassword?: string; account?: CisebRegisteredAccount; error?: string }>(
+      '/api/admin/accounts',
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      }
+    );
 
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      return { success: false, error: data.error || 'Erro ao criar conta no servidor.' };
+    if (!result.ok || !result.data?.success) {
+      return { success: false, error: result.error || result.data?.error || 'Erro ao criar conta no servidor.' };
     }
 
     return {
       success: true,
-      tempPassword: data.tempPassword,
-      account: data.account,
+      tempPassword: result.data.tempPassword,
+      account: result.data.account,
     };
   } catch (err: any) {
     return { success: false, error: err?.message || 'Falha de comunicação com o servidor administrativo.' };
@@ -396,7 +404,7 @@ export async function adminCreateAccount(payload: {
 }
 
 /**
- * Admin: Update account metadata via secure backend endpoint
+ * Admin: Update account metadata via secure backend endpoint & Firestore sync
  */
 export async function adminUpdateAccount(
   id: string,
@@ -408,19 +416,60 @@ export async function adminUpdateAccount(
   }
 ): Promise<{ success: boolean; error?: string; account?: CisebRegisteredAccount }> {
   try {
-    const headers = await getAdminHeaders();
-    const res = await fetch(`/api/admin/accounts/${id}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      return { success: false, error: data.error || 'Erro ao atualizar dados da conta.' };
+    // 1. Direct Firestore update for instant real-time UI reflection
+    try {
+      const accRef = doc(db, ACCOUNTS_COLLECTION, id);
+      await setDoc(accRef, payload, { merge: true });
+    } catch (fsErr) {
+      console.warn('[Admin Update] Aviso ao salvar no Firestore:', fsErr);
     }
 
-    return { success: true, account: data.account };
+    // 2. Update local storage accounts cache
+    try {
+      const raw = localStorage.getItem(CISEB_ACCOUNTS_STORAGE_KEY);
+      if (raw) {
+        const list: CisebRegisteredAccount[] = JSON.parse(raw);
+        const idx = list.findIndex((a) => a.id === id);
+        if (idx >= 0) {
+          list[idx] = { ...list[idx], ...payload };
+          localStorage.setItem(CISEB_ACCOUNTS_STORAGE_KEY, JSON.stringify(list));
+        }
+      }
+    } catch {}
+
+    // 3. Update current user session if the edited account is the logged-in user
+    try {
+      const rawUser = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (rawUser) {
+        const loggedUser: AuthUser = JSON.parse(rawUser);
+        if (loggedUser.id === id || loggedUser.uid === id) {
+          const updatedUser: AuthUser = {
+            ...loggedUser,
+            ...(payload.nome ? { nome: payload.nome } : {}),
+            ...(payload.unidadeCiseb ? { unidadeCiseb: payload.unidadeCiseb } : {}),
+            ...(payload.role ? { role: payload.role } : {}),
+          };
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
+        }
+      }
+    } catch {}
+
+    // 4. Backend Admin API to update Firebase Auth claims and displayName
+    const headers = await getAdminHeaders();
+    const result = await safeJsonFetch<{ success: boolean; account?: CisebRegisteredAccount; error?: string }>(
+      `/api/admin/accounts/${id}`,
+      {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (!result.ok && result.error) {
+      console.warn('[Admin API] Aviso do servidor ao sincronizar claims:', result.error);
+    }
+
+    return { success: true, account: result.data?.account };
   } catch (err: any) {
     return { success: false, error: err?.message || 'Falha ao atualizar conta no servidor.' };
   }
@@ -435,21 +484,23 @@ export async function adminResetPassword(
 ): Promise<{ success: boolean; tempPassword?: string; resetLink?: string; error?: string }> {
   try {
     const headers = await getAdminHeaders();
-    const res = await fetch(`/api/admin/accounts/${id}/reset-password`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ generateTemporaryPassword: generateTempPassword }),
-    });
+    const result = await safeJsonFetch<{ success: boolean; tempPassword?: string; resetLink?: string; error?: string }>(
+      `/api/admin/accounts/${id}/reset-password`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ generateTemporaryPassword: generateTempPassword }),
+      }
+    );
 
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      return { success: false, error: data.error || 'Erro ao redefinir senha da conta.' };
+    if (!result.ok || !result.data?.success) {
+      return { success: false, error: result.error || result.data?.error || 'Erro ao redefinir senha da conta.' };
     }
 
     return {
       success: true,
-      tempPassword: data.tempPassword,
-      resetLink: data.resetLink,
+      tempPassword: result.data.tempPassword,
+      resetLink: result.data.resetLink,
     };
   } catch (err: any) {
     return { success: false, error: err?.message || 'Falha ao redefinir senha no servidor.' };
@@ -462,14 +513,16 @@ export async function adminResetPassword(
 export async function adminDeleteAccount(id: string): Promise<{ success: boolean; error?: string }> {
   try {
     const headers = await getAdminHeaders();
-    const res = await fetch(`/api/admin/accounts/${id}`, {
-      method: 'DELETE',
-      headers,
-    });
+    const result = await safeJsonFetch<{ success: boolean; error?: string }>(
+      `/api/admin/accounts/${id}`,
+      {
+        method: 'DELETE',
+        headers,
+      }
+    );
 
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      return { success: false, error: data.error || 'Erro ao remover conta no servidor.' };
+    if (!result.ok || !result.data?.success) {
+      return { success: false, error: result.error || result.data?.error || 'Erro ao remover conta no servidor.' };
     }
 
     return { success: true };
@@ -477,3 +530,54 @@ export async function adminDeleteAccount(id: string): Promise<{ success: boolean
     return { success: false, error: err?.message || 'Falha ao excluir conta no servidor.' };
   }
 }
+
+/**
+ * Update current user's profile info (e.g., Unidade CISEB, Nome) in Firestore and Auth
+ */
+export async function updateUserProfile(
+  uid: string,
+  updates: { unidadeCiseb?: string; nome?: string }
+): Promise<AuthUser> {
+  const user = auth.currentUser;
+  const targetUid = uid || user?.uid || '';
+  if (!targetUid) {
+    throw new Error('Nenhum usuário conectado para atualizar perfil.');
+  }
+
+  const cleanUpdates: Partial<CisebRegisteredAccount> = {};
+
+  if (updates.unidadeCiseb) {
+    cleanUpdates.unidadeCiseb = updates.unidadeCiseb.trim();
+  }
+  if (updates.nome) {
+    cleanUpdates.nome = updates.nome.trim().toUpperCase();
+    if (user) {
+      await updateProfile(user, { displayName: cleanUpdates.nome }).catch(() => {});
+    }
+  }
+
+  // Update in Firestore
+  try {
+    const accRef = doc(db, ACCOUNTS_COLLECTION, targetUid);
+    await setDoc(accRef, cleanUpdates, { merge: true });
+  } catch (err) {
+    console.error('[AuthService] Erro ao atualizar perfil no Firestore:', err);
+  }
+
+  // Refresh profile
+  const updated = await fetchUserProfile(targetUid, user?.email || undefined);
+  if (!updated) {
+    return {
+      id: targetUid,
+      uid: targetUid,
+      nome: updates.nome || user?.displayName || 'USUÁRIO',
+      email: user?.email || '',
+      role: 'formador',
+      unidadeCiseb: updates.unidadeCiseb || 'CISEB - COORDENAÇÃO GERAL SEDUC/PA',
+      ultimoAcesso: new Date().toISOString(),
+      mustChangePassword: false,
+    };
+  }
+  return updated;
+}
+

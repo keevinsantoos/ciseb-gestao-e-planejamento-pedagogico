@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CisebSessionPlan, AuthUser } from '../types';
+import { CisebSessionPlan, AuthUser, getPlanDaysRemaining, PLAN_RETENTION_DAYS } from '../types';
 import {
   X,
   History,
@@ -13,7 +13,9 @@ import {
   Building2,
   UserCheck,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  Clock,
+  Info,
 } from 'lucide-react';
 
 interface HistoryDrawerProps {
@@ -116,12 +118,20 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({
         </button>
       </div>
 
-      {/* User Privacy Notice */}
-      <div className="px-4 py-2.5 bg-sky-50 dark:bg-sky-950/40 border-b border-sky-100 dark:border-sky-900/50 flex items-center gap-2 text-xs text-sky-900 dark:text-sky-200">
-        <ShieldCheck className="w-4 h-4 text-[#005BAC] dark:text-sky-400 shrink-0" />
-        <p className="text-[11px] leading-tight">
-          Visualização restrita ao autor <span className="font-bold text-[#005BAC] dark:text-sky-300">({currentUser?.nome || currentUser?.email})</span>.
-        </p>
+      {/* User Privacy & Retention Notice */}
+      <div className="px-4 py-2 bg-sky-50 dark:bg-sky-950/40 border-b border-sky-100 dark:border-sky-900/50 flex flex-col gap-1 text-xs text-sky-900 dark:text-sky-200">
+        <div className="flex items-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 shrink-0" />
+          <p className="text-[11px] leading-tight">
+            Visualização restrita ao autor <span className="font-bold text-[#005BAC] dark:text-sky-300">({currentUser?.nome || currentUser?.email})</span>.
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] text-amber-800 dark:text-amber-300 bg-amber-100/70 dark:bg-amber-950/50 px-2 py-1 rounded border border-amber-200/80 dark:border-amber-800/40">
+          <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span>
+            <strong>Retenção de {PLAN_RETENTION_DAYS} dias:</strong> planos são excluídos após 1 semana para liberar cache.
+          </span>
+        </div>
       </div>
 
       {/* Toolbar (Search & Import/Export) */}
@@ -159,7 +169,9 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({
       {/* Plan Cards List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-slate-900/50">
         {filteredPlans.length > 0 ? (
-          filteredPlans.map((plan) => (
+          filteredPlans.map((plan) => {
+            const daysRemaining = getPlanDaysRemaining(plan);
+            return (
             <div
               key={plan.id}
               className="bg-white dark:bg-slate-800 rounded-xl p-3.5 border border-slate-200 dark:border-slate-700 shadow-xs space-y-2 hover:border-[#005BAC]/40 dark:hover:border-sky-500/40 transition-all"
@@ -169,10 +181,30 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({
                   {plan.temaImersao || 'Geral'}
                 </span>
 
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {new Date(plan.updatedAt || plan.createdAt).toLocaleDateString('pt-BR')}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                      daysRemaining <= 1
+                        ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300'
+                        : daysRemaining <= 3
+                        ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
+                        : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300'
+                    }`}
+                    title="Tempo restante até expiração automática após 7 dias de inatividade"
+                  >
+                    <Clock className="w-2.5 h-2.5" />
+                    {daysRemaining === 0
+                      ? 'Expira hoje'
+                      : daysRemaining === 1
+                      ? 'Expira amanhã'
+                      : `${daysRemaining}d restantes`}
+                  </span>
+
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {new Date(plan.updatedAt || plan.createdAt).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
               </div>
 
               <h4 className="font-bold text-xs text-slate-900 dark:text-white leading-snug">
@@ -211,7 +243,8 @@ export const HistoryDrawer: React.FC<HistoryDrawerProps> = ({
                 </button>
               </div>
             </div>
-          ))
+            );
+          })
         ) : (
           <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500 space-y-2">
             <FileText className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600" />

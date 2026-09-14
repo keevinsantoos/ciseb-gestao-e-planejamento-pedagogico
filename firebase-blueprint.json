@@ -51,6 +51,19 @@
         "dataCadastro": { "type": "string" }
       },
       "required": ["id", "nome", "email", "role"]
+    },
+    "Pergunta": {
+      "title": "Pergunta",
+      "description": "Dúvida ou solicitação de suporte enviada por educadores do CISEB",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "pergunta": { "type": "string" },
+        "usuarioNome": { "type": "string" },
+        "usuarioEmail": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["pergunta", "usuarioEmail", "createdAt"]
     }
   },
   "firestore": {
@@ -61,6 +74,10 @@
     "/accounts/{accountId}": {
       "schema": "Account",
       "description": "Coleção de contas e perfis públicos institucionais do CISEB (sem senhas)"
+    },
+    "/perguntas/{perguntaId}": {
+      "schema": "Pergunta",
+      "description": "Coleção de dúvidas e mensagens de suporte enviadas pelos educadores"
     }
   }
 }

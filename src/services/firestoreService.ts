@@ -15,7 +15,9 @@ import { DEFAULT_INITIAL_ACCOUNTS, CISEB_ACCOUNTS_STORAGE_KEY } from '../data/ci
 
 const PLANS_COLLECTION = 'plans';
 const ACCOUNTS_COLLECTION = 'accounts';
+const QUESTIONS_COLLECTION = 'perguntas';
 const PLANS_STORAGE_KEY = 'ciseb_saved_plans_v2';
+const QUESTIONS_STORAGE_KEY = 'ciseb_saved_perguntas_v1';
 
 // ----------------------------------------------------
 // PLANS FIRESTORE OPERATIONS
@@ -313,3 +315,58 @@ export function subscribeAccounts(callback: (accounts: CisebRegisteredAccount[])
     return () => {};
   }
 }
+
+// ----------------------------------------------------
+// QUESTIONS / DÚVIDAS FIRESTORE OPERATIONS
+// ----------------------------------------------------
+
+export interface CisebQuestionRecord {
+  id: string;
+  pergunta: string;
+  usuarioNome: string;
+  usuarioEmail: string;
+  createdAt: string;
+}
+
+/**
+ * Salva uma nova pergunta ou dúvida no Firestore (coleção 'perguntas') e no localStorage.
+ */
+export async function saveQuestionToFirestore(
+  pergunta: string,
+  usuario: { nome: string; email: string }
+): Promise<void> {
+  const cleanPergunta = (pergunta || '').trim();
+  if (!cleanPergunta) {
+    throw new Error('O conteúdo da dúvida/pergunta não pode estar vazio.');
+  }
+
+  const questionId = 'quest_' + Date.now().toString() + '_' + Math.random().toString(36).substring(2, 7);
+  const newQuestion: CisebQuestionRecord = {
+    id: questionId,
+    pergunta: cleanPergunta,
+    usuarioNome: usuario.nome || 'Educador CISEB',
+    usuarioEmail: usuario.email || 'ciseb@escola.seduc.pa.gov.br',
+    createdAt: new Date().toISOString(),
+  };
+
+  // Local Storage fallback
+  try {
+    const raw = localStorage.getItem(QUESTIONS_STORAGE_KEY);
+    const list: CisebQuestionRecord[] = raw ? JSON.parse(raw) : [];
+    list.unshift(newQuestion);
+    localStorage.setItem(QUESTIONS_STORAGE_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.warn('[FirestoreService] Falha ao salvar pergunta no cache local:', e);
+  }
+
+  // Firestore persistence
+  try {
+    const docRef = doc(db, QUESTIONS_COLLECTION, questionId);
+    await setDoc(docRef, newQuestion);
+    console.log(`[Firestore] Pergunta ${questionId} enviada com sucesso ao Firestore.`);
+  } catch (error) {
+    console.error('[Firestore] Erro ao enviar pergunta ao Firestore:', error);
+    // Even if remote fails, it's saved locally
+  }
+}
+

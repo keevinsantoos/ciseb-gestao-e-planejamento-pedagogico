@@ -5,9 +5,11 @@ import { AuthUser } from '../types';
 import {
   loginWithEmail,
   loginWithGoogle,
+  signInGoogleCredential,
   registerAccount,
   registerGoogleAccount as registerGoogleAccountService,
   changeUserPassword,
+  updateUserProfile,
   sendResetPassword,
   signOutUser,
   fetchUserProfile,
@@ -158,6 +160,26 @@ export function useAuth() {
     }
   }, []);
 
+  const updateProfile = useCallback(
+    async (updates: { unidadeCiseb?: string; nome?: string }): Promise<AuthUser> => {
+      setError(null);
+      try {
+        const uid = user?.uid || user?.id || '';
+        const updated = await updateUserProfile(uid, updates);
+        setUser(updated);
+        try {
+          localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
+        } catch {}
+        return updated;
+      } catch (err: any) {
+        const friendly = getFriendlyAuthErrorMessage(err);
+        setError(friendly);
+        throw new Error(friendly);
+      }
+    },
+    [user]
+  );
+
   const logout = useCallback(async (): Promise<void> => {
     setError(null);
     try {
@@ -179,8 +201,10 @@ export function useAuth() {
     mustChangePassword: !!user?.mustChangePassword,
     login,
     loginGoogle,
+    signInGoogleCredential,
     register,
     registerGoogleAccount,
+    updateProfile,
     changePassword,
     resetPassword,
     logout,

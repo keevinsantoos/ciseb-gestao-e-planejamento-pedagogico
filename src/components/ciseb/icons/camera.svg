@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- CAMERA OFICIAL CISEB -->
+  <g fill="none" stroke="#005BAC" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Corpo Principal -->
+    <path d="M 32 68 C 32 58 40 50 50 50 L 68 50 L 78 36 C 80 33 84 31 88 31 L 112 31 C 116 31 120 33 122 36 L 132 50 L 150 50 C 160 50 168 58 168 68 L 168 144 C 168 154 160 162 150 162 L 50 162 C 40 162 32 154 32 144 Z" />
+    
+    <!-- Lente Externa -->
+    <circle cx="100" cy="106" r="42" stroke-width="8" />
+    <!-- Lente Interna -->
+    <circle cx="100" cy="106" r="24" stroke-width="8" />
+    
+    <!-- Botao de Disparo Superior Esquerdo -->
+    <path d="M 50 42 L 68 42" stroke-width="8" />
+    <!-- Botao / Dial Direito -->
+    <path d="M 136 42 L 150 42" stroke-width="8" />
+    
+    <!-- Visor / Sensor Superior Direito -->
+    <circle cx="148" cy="65" r="5" fill="#005BAC" stroke="none" />
+    <!-- Faixa Divisoria -->
+    <path d="M 132 50 L 132 68 L 168 68" stroke-width="6" />
+    <path d="M 32 68 L 68 68" stroke-width="6" />
+    <path d="M 32 144 L 168 144" stroke-width="6" />
+  </g>
+</svg>

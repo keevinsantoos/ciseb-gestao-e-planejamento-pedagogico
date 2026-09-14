@@ -110,7 +110,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
       </div>
 
       {/* SECTION 1: Identificação Oficial */}
-      <section className="bg-white rounded-xl p-3.5 sm:p-4 shadow-sm border border-slate-200/80 space-y-3">
+      <section id="secao-1-identificacao" className="bg-white rounded-xl p-3.5 sm:p-4 shadow-sm border border-slate-200/80 space-y-3 scroll-mt-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
           <h2 className="text-xs font-black text-[#005BAC] uppercase flex items-center gap-1.5 tracking-wide">
             <Building2 className="w-4 h-4 text-[#005BAC]" />
@@ -239,7 +239,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
       </section>
 
       {/* SECTION 2: Informações Gerais & Tema */}
-      <section className="bg-white rounded-xl p-3.5 sm:p-4 shadow-sm border border-slate-200/80 space-y-3">
+      <section id="secao-2-tema" className="bg-white rounded-xl p-3.5 sm:p-4 shadow-sm border border-slate-200/80 space-y-3 scroll-mt-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
           <h2 className="text-xs font-black text-[#005BAC] uppercase flex items-center gap-1.5 tracking-wide">
             <BookMarked className="w-4 h-4 text-[#005BAC]" />
@@ -317,7 +317,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
       </section>
 
       {/* SECTION 3: Alinhamento Pedagógico (BNCC, ODS & Trilhas) */}
-      <section className="bg-white rounded-xl p-3.5 sm:p-4 shadow-sm border border-slate-200/80 space-y-3">
+      <section id="secao-3-bncc" className="bg-white rounded-xl p-3.5 sm:p-4 shadow-sm border border-slate-200/80 space-y-3 scroll-mt-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
           <h2 className="text-xs font-black text-[#005BAC] uppercase flex items-center gap-1.5 tracking-wide">
             <Cpu className="w-4 h-4 text-[#005BAC]" />
@@ -464,7 +464,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
       </section>
 
       {/* SECTION 4: Design Thinking Framework (Metodologia - High Density Columns) */}
-      <section className="bg-white rounded-xl p-3.5 sm:p-4 shadow-sm border border-slate-200/80 space-y-3">
+      <section id="secao-4-metodologia" className="bg-white rounded-xl p-3.5 sm:p-4 shadow-sm border border-slate-200/80 space-y-3 scroll-mt-6">
         <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-1.5 gap-2">
           <h2 className="text-xs font-black text-[#005BAC] uppercase flex items-center gap-1.5 tracking-wide">
             <Compass className="w-4 h-4 text-[#005BAC]" />
@@ -590,7 +590,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
       </section>
 
       {/* SECTION 5: Detalhes Técnicos & Execução (High Density Card) */}
-      <section className="bg-gradient-to-br from-[#005BAC] to-[#013780] rounded-xl p-3.5 sm:p-4 text-white shadow-md space-y-3 border border-[#012b66]">
+      <section id="secao-5-recursos" className="bg-gradient-to-br from-[#005BAC] to-[#013780] rounded-xl p-3.5 sm:p-4 text-white shadow-md space-y-3 border border-[#012b66] scroll-mt-6">
         <div className="flex items-center justify-between border-b border-white/15 pb-1.5">
           <h2 className="text-xs font-black uppercase text-white flex items-center gap-1.5 tracking-wide">
             <Wrench className="w-4 h-4 text-amber-300" />

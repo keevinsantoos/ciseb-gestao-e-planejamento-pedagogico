@@ -25,6 +25,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  Building2,
+  School,
+  Sparkles,
 } from 'lucide-react';
 import { AuthUser } from '../types';
 
@@ -39,6 +42,7 @@ interface HeaderProps {
   onToggleAiDrawer: () => void;
   onOpenPrint: () => void;
   onOpenAccountsModal?: () => void;
+  onOpenUnitModal?: () => void;
   onChangePassword?: () => void;
   onOpenSupport?: () => void;
   supportUrl?: string;
@@ -61,6 +65,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleAiDrawer,
   onOpenPrint,
   onOpenAccountsModal,
+  onOpenUnitModal,
   onChangePassword,
   onOpenSupport,
   supportUrl = DEFAULT_SUPPORT_URL,
@@ -102,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
   return (
-    <header className="sticky top-0 z-30 bg-gradient-to-r from-[#005BAC] via-[#004e96] to-[#013780] text-white border-b border-[#012b66] shadow-md">
+    <header className="sticky top-0 z-30 bg-gradient-to-r from-[#005BAC] via-[#004e96] to-[#013780] text-white border-b border-[#012b66] shadow-md print:hidden">
       {/* Top Banner with Official CISEB / SEDUC PA Branding */}
       <div className="w-full px-4 sm:px-6 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Brand identity */}
@@ -157,14 +162,23 @@ export const Header: React.FC<HeaderProps> = ({
               Relatório
             </button>
 
-            {currentUser?.role === 'monitoramento' && (
+            {(currentUser?.role === 'monitoramento' || currentUser?.role === 'coordenador') && (
               <button
                 onClick={() => setActiveView('monitoring')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeView === 'monitoring'
-                    ? 'bg-amber-400 text-[#021631] shadow-sm'
+                    ? currentUser?.role === 'coordenador'
+                      ? 'bg-amber-500 text-slate-950 shadow-sm'
+                      : 'bg-amber-400 text-[#021631] shadow-sm'
+                    : currentUser?.role === 'coordenador'
+                    ? 'text-amber-200 hover:text-amber-100 hover:bg-white/15'
                     : 'text-white/80 hover:text-amber-300 hover:bg-white/15'
                 }`}
+                title={
+                  currentUser?.role === 'coordenador'
+                    ? 'Painel de Monitoramento CISEB (Coordenação)'
+                    : 'Painel Geral de Monitoramento SEDUC/PA'
+                }
               >
                 <LayoutDashboard className="w-3.5 h-3.5" />
                 Painel
@@ -328,7 +342,29 @@ export const Header: React.FC<HeaderProps> = ({
                       </button>
                     )}
 
-                    {/* 1. Alterar Minha Senha */}
+                    {/* 1. Minha Unidade CISEB */}
+                    {onOpenUnitModal && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSettingsOpen(false);
+                          onOpenUnitModal();
+                        }}
+                        className="w-full px-3.5 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-[#005BAC] dark:hover:text-sky-300 hover:bg-sky-50 dark:hover:bg-slate-700/60 transition-colors flex items-center gap-2.5 cursor-pointer"
+                      >
+                        <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                          <Building2 className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span>Minha Unidade CISEB</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-400 font-normal truncate">
+                            {currentUser?.unidadeCiseb || 'Selecionar unidade'}
+                          </span>
+                        </div>
+                      </button>
+                    )}
+
+                    {/* 2. Alterar Minha Senha */}
                     {onChangePassword && (
                       <button
                         type="button"
@@ -348,7 +384,7 @@ export const Header: React.FC<HeaderProps> = ({
                       </button>
                     )}
 
-                    {/* 2. Suporte Técnico */}
+                    {/* 3. Suporte Técnico */}
                     <button
                       type="button"
                       onClick={handleOpenSupport}
@@ -366,28 +402,39 @@ export const Header: React.FC<HeaderProps> = ({
                       <ExternalLink className="w-3 h-3 text-slate-400 dark:text-slate-400 shrink-0" />
                     </button>
 
-                    {/* 3. Gestão Geral de Contas (Apenas equipe de monitoramento) */}
-                    {onOpenAccountsModal && currentUser?.role === 'monitoramento' && (
-                      <>
-                        <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsSettingsOpen(false);
-                            onOpenAccountsModal();
-                          }}
-                          className="w-full px-3.5 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-[#005BAC] dark:hover:text-sky-300 hover:bg-sky-50 dark:hover:bg-slate-700/60 transition-colors flex items-center gap-2.5 cursor-pointer"
-                        >
-                          <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-[#005BAC] dark:text-sky-300 flex items-center justify-center shrink-0">
-                            <Users className="w-3.5 h-3.5" />
-                          </div>
-                          <div className="flex flex-col">
-                            <span>Gestão de Contas</span>
-                            <span className="text-[10px] text-slate-400 dark:text-slate-400 font-normal">Monitoramento & Unidades</span>
-                          </div>
-                        </button>
-                      </>
-                    )}
+                    {/* 4. Gestão de Contas (Monitoramento e Coordenação) */}
+                    {onOpenAccountsModal &&
+                      (currentUser?.role === 'monitoramento' || currentUser?.role === 'coordenador') && (
+                        <>
+                          <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsSettingsOpen(false);
+                              onOpenAccountsModal();
+                            }}
+                            className="w-full px-3.5 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-[#005BAC] dark:hover:text-sky-300 hover:bg-sky-50 dark:hover:bg-slate-700/60 transition-colors flex items-center gap-2.5 cursor-pointer"
+                          >
+                            <div
+                              className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                                currentUser?.role === 'coordenador'
+                                  ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-300'
+                                  : 'bg-blue-100 dark:bg-blue-900/40 text-[#005BAC] dark:text-sky-300'
+                              }`}
+                            >
+                              <Users className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span>Gestão de Contas</span>
+                              <span className="text-[10px] text-slate-400 dark:text-slate-400 font-normal">
+                                {currentUser?.role === 'coordenador'
+                                  ? 'Formadores da Unidade'
+                                  : 'Monitoramento & Unidades'}
+                              </span>
+                            </div>
+                          </button>
+                        </>
+                      )}
                   </div>
                 </div>
               )}
@@ -396,17 +443,22 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Logged in User Profile & Logout */}
             {currentUser && (
               <div className="bg-black/25 pl-2.5 pr-1 py-1 rounded-xl border border-white/15 flex items-center gap-2 text-xs shadow-sm">
-                <div className="flex items-center gap-1.5 max-w-[140px] sm:max-w-[200px]">
-                  <div className="w-6 h-6 rounded-full bg-sky-400 text-[#021631] font-black flex items-center justify-center text-[10px] shrink-0 shadow-xs">
+                <button
+                  type="button"
+                  onClick={onOpenUnitModal}
+                  className="flex items-center gap-1.5 max-w-[140px] sm:max-w-[200px] text-left hover:opacity-85 transition-opacity cursor-pointer group"
+                  title="Clique para ver ou alterar sua Unidade CISEB"
+                >
+                  <div className="w-6 h-6 rounded-full bg-sky-400 text-[#021631] font-black flex items-center justify-center text-[10px] shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                     <span className="text-[#021631] font-black">{currentUser.nome.charAt(0)}</span>
                   </div>
-                  <div className="truncate text-left leading-tight">
-                    <div className="font-bold text-white text-[11px] truncate" title={currentUser.nome}>
+                  <div className="truncate leading-tight">
+                    <div className="font-bold text-white text-[11px] truncate group-hover:text-sky-200 transition-colors" title={currentUser.nome}>
                       {currentUser.nome.split(' ')[0]} {currentUser.nome.split(' ').slice(1, 2)}
                     </div>
                     <div className="text-[9px] text-sky-200 truncate uppercase font-medium">
                       {currentUser.role === 'formador'
-                        ? 'Formador(a)'
+                        ? (currentUser.unidadeCiseb ? currentUser.unidadeCiseb.replace('CISEB EE ', '').slice(0, 18) : 'Formador(a)')
                         : currentUser.role === 'monitoramento'
                         ? 'Equipe Monitoramento'
                         : currentUser.role === 'coordenador'
@@ -414,7 +466,7 @@ export const Header: React.FC<HeaderProps> = ({
                         : 'Usuário'}
                     </div>
                   </div>
-                </div>
+                </button>
 
                 {onLogout && (
                   <button

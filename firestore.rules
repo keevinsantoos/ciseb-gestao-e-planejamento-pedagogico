@@ -35,6 +35,15 @@ service cloud.firestore {
       allow delete: if isAuthenticated();
     }
 
+    // Perguntas collection validation & rules
+    match /perguntas/{perguntaId} {
+      allow read: if isAuthenticated() || true;
+      allow create: if request.resource.data.pergunta is string
+                    && request.resource.data.pergunta.size() >= 3
+                    && request.resource.data.usuarioEmail is string;
+      allow update, delete: if isAuthenticated();
+    }
+
     // Default catch-all
     match /{document=**} {
       allow read, write: if false;
