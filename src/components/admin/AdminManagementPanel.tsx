@@ -583,7 +583,7 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
         )}
 
         {/* Estatísticas Rápidas */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-100 dark:border-slate-700">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-100 dark:border-slate-700">
           <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
               Professores Cadastrados
@@ -623,19 +623,21 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
       </div>
 
       {/* ── NAVEGAÇÃO ENTRE ABAS ─────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-1">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 border-b border-slate-200 dark:border-slate-700 pb-3 sm:pb-1">
         <button
           id="tab-btn-professores"
           type="button"
           onClick={() => setActiveTab('professores')}
-          className={`px-5 py-3 rounded-2xl font-bold text-sm flex items-center gap-2.5 transition-all cursor-pointer ${
+          className={`w-full sm:w-auto px-5 py-3 rounded-2xl font-bold text-sm flex items-center justify-between sm:justify-start gap-2.5 transition-all cursor-pointer ${
             activeTab === 'professores'
               ? 'bg-[#005BAC] text-white shadow-md'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <Users className="w-4 h-4" />
-          <span>Professores Formadores</span>
+          <div className="flex items-center gap-2.5">
+            <Users className="w-4 h-4" />
+            <span>Professores Formadores</span>
+          </div>
           <span
             className={`text-xs px-2 py-0.5 rounded-full font-bold ${
               activeTab === 'professores'
@@ -651,14 +653,16 @@ export const AdminManagementPanel: React.FC<AdminManagementPanelProps> = ({
           id="tab-btn-unidades"
           type="button"
           onClick={() => setActiveTab('unidades')}
-          className={`px-5 py-3 rounded-2xl font-bold text-sm flex items-center gap-2.5 transition-all cursor-pointer ${
+          className={`w-full sm:w-auto px-5 py-3 rounded-2xl font-bold text-sm flex items-center justify-between sm:justify-start gap-2.5 transition-all cursor-pointer ${
             activeTab === 'unidades'
               ? 'bg-[#005BAC] text-white shadow-md'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          <Building2 className="w-4 h-4" />
-          <span>Unidades CISEB</span>
+          <div className="flex items-center gap-2.5">
+            <Building2 className="w-4 h-4" />
+            <span>Unidades CISEB</span>
+          </div>
           <span
             className={`text-xs px-2 py-0.5 rounded-full font-bold ${
               activeTab === 'unidades'

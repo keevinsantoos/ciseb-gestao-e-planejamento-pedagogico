@@ -155,7 +155,7 @@ Como podemos iniciar a Fase 1 (Empatia)? Quais alternativas de abordagem você s
   ];
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 md:w-[440px] bg-white shadow-2xl border-l border-slate-200 flex flex-col">
+    <div className="fixed inset-y-0 right-0 z-50 w-[100vw] sm:w-96 md:w-[440px] max-w-full bg-white shadow-2xl border-l border-slate-200 flex flex-col">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#005BAC] to-[#013780] text-white p-4 flex items-center justify-between border-b border-[#012b66]">
         <div className="flex items-center gap-3">

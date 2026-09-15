@@ -799,7 +799,7 @@ export const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({
       </div>
 
       {/* ─── 2. FAIXA DE KPIS PRINCIPAIS (5 CARDS) ─────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         
         {/* KPI 1: Total de Planos */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">

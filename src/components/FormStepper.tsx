@@ -42,7 +42,7 @@ export const FormStepper: React.FC<FormStepperProps> = ({
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#005BAC] dark:text-sky-300 text-xs font-bold shrink-0 border border-blue-100 dark:border-blue-900/50">
             <span>Etapa {currentStep} de 5</span>
           </div>
-          <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
+          <span className="flex-1 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 truncate min-w-0">
             {currentStepData.title}
           </span>
         </div>
@@ -67,15 +67,15 @@ export const FormStepper: React.FC<FormStepperProps> = ({
       </div>
 
       {/* Main 5-Stage Stepper: 1 ───── 2 ───── 3 ───── 4 ───── 5 */}
-      <nav aria-label="Progresso das etapas do formulário" className="w-full">
-        <ol className="grid grid-cols-5 gap-1 sm:gap-2 items-center">
+      <nav aria-label="Progresso das etapas do formulário" className="w-full overflow-hidden">
+        <ol className="flex flex-nowrap sm:grid sm:grid-cols-5 gap-1 sm:gap-2 items-center overflow-x-auto pb-2 sm:pb-0 snap-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {steps.map((step, index) => {
             const isCurrent = currentStep === step.id;
             const isCompleted = step.isComplete;
             const isPast = step.id < currentStep;
 
             return (
-              <li key={step.id} className="relative">
+              <li key={step.id} className="relative flex-none w-[72px] sm:w-auto snap-center">
                 {/* Connecting Line to next step */}
                 {index < steps.length - 1 && (
                   <div

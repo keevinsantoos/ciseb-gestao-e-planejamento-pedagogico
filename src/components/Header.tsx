@@ -28,6 +28,8 @@ import {
   Building2,
   School,
   Sparkles,
+  Menu,
+  X,
 } from 'lucide-react';
 import { AuthUser } from '../types';
 import { DirectionAwareTabs, TabItem } from './ui/direction-aware-tabs';
@@ -85,6 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSavePlan,
 }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -113,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="sticky top-0 z-30 bg-gradient-to-r from-[#005BAC] via-[#004e96] to-[#013780] text-white border-b border-[#012b66] shadow-md print:hidden transition-colors">
       {/* Top Banner with Official CISEB / SEDUC PA Branding */}
-      <div className="w-full px-4 sm:px-6 py-2.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="w-full px-4 sm:px-6 py-2.5 flex flex-row items-center justify-between gap-3 relative z-40">
         {/* Brand identity */}
         <div 
           onClick={onBackToHub}
@@ -129,12 +132,11 @@ export const Header: React.FC<HeaderProps> = ({
           }}
         >
           <div
-            className="h-14 sm:h-16 md:h-18 w-auto shrink-0 flex items-center justify-center transition-all group-hover:scale-105"
+            className="h-12 sm:h-16 md:h-20 w-auto shrink-0 flex items-center justify-center transition-all group-hover:scale-105"
           >
-            <CisebLogo className="h-14 sm:h-16 md:h-18 w-auto drop-shadow-md" variant="light" />
+            <CisebLogo className="h-12 sm:h-16 md:h-20 w-auto drop-shadow-md" variant="light" />
           </div>
-
-          <div className="hidden sm:flex flex-col justify-center border-l-2 border-white/20 pl-4 py-1">
+          <div className="hidden lg:flex flex-col justify-center border-l-2 border-white/20 pl-4 py-1">
             <div className="flex items-center gap-2.5 mb-1.5">
               <span className="text-[10px] font-black uppercase tracking-widest text-sky-50 bg-white/15 px-2 py-0.5 rounded border border-white/20 backdrop-blur-sm shadow-xs">
                 DINOV
@@ -149,8 +151,18 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Action Controls & Navigation */}
-        <div className="flex-1 flex items-center justify-end flex-wrap gap-2.5 sm:gap-3 text-xs">
+        {/* Hamburger Menu Toggle (Mobile) */}
+        <button
+          type="button"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="lg:hidden p-2 rounded-xl text-white hover:bg-white/10 active:bg-white/20 transition-colors cursor-pointer"
+          aria-label="Abrir menu mobile"
+        >
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+
+        {/* Action Controls & Navigation (Desktop) */}
+        <div className="hidden lg:flex flex-1 items-center justify-end flex-wrap gap-2.5 sm:gap-3 text-xs">
           {/* Main Controls Dock */}
           {activeView !== 'hub' && (
             <div className="bg-black/20 p-1 rounded-xl border border-white/15 flex items-center gap-1 shadow-xs backdrop-blur-sm">
@@ -478,14 +490,15 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Progress sub-bar for form completeness */}
       {activeView === 'edit' && (
-        <div className="bg-[#012b66] border-t border-[#013780] px-4 sm:px-6 py-1 text-xs flex items-center justify-between text-white/90">
-          <div className="flex items-center gap-2 text-[11px]">
-            <span className="font-bold uppercase text-white/85">
-              Preenchimento de Parâmetros:
+        <div className="bg-[#012b66] border-t border-[#013780] px-4 sm:px-6 py-1 text-xs flex items-center justify-between gap-2 text-white/90 overflow-hidden">
+          <div className="flex items-center gap-2 text-[11px] min-w-0 truncate">
+            <span className="font-bold uppercase text-white/85 truncate">
+              <span className="hidden sm:inline">Preenchimento de Parâmetros:</span>
+              <span className="sm:hidden">Progresso:</span>
             </span>
-            <span className="font-black text-[#78BC61]">{completionPercentage}%</span>
+            <span className="font-black text-[#78BC61] shrink-0">{completionPercentage}%</span>
           </div>
-          <div className="w-28 sm:w-44 bg-black/30 rounded-full h-1.5 overflow-hidden border border-white/10">
+          <div className="w-20 sm:w-44 bg-black/30 rounded-full h-1.5 overflow-hidden border border-white/10 shrink-0">
             <div
               className={`h-full transition-all duration-500 rounded-full ${
                 completionPercentage === 100
@@ -499,6 +512,195 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       )}
+
+      {/* Mobile Menu Drawer */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden absolute top-full left-0 w-full bg-[#004e96] border-b border-[#012b66] shadow-xl z-50 animate-in slide-in-from-top-2 duration-200">
+          <div className="flex flex-col py-4 px-4 gap-4">
+            
+            {/* Quick Actions / Navigation in Mobile */}
+            <div className="grid grid-cols-2 gap-2 text-white">
+              <button
+                onClick={() => {
+                  onBackToHub?.();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-2 p-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-xs"
+              >
+                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                  <span className="text-lg leading-none">&larr;</span>
+                </div>
+                Início / Hub
+              </button>
+              
+              {onSavePlan && (activeView === 'edit' || activeView === 'report') ? (
+                <button
+                  onClick={() => {
+                    onSavePlan();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 p-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-bold text-xs shadow-md"
+                >
+                  <Save className="w-5 h-5 shrink-0" />
+                  Salvar Plano
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    onNewPlan();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 p-3 bg-sky-400 hover:bg-sky-300 text-[#00386b] rounded-xl font-bold text-xs"
+                >
+                  <PlusCircle className="w-5 h-5 shrink-0" />
+                  Novo Plano
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  onOpenHistory();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-2 p-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-xs"
+              >
+                <History className="w-5 h-5 shrink-0" />
+                Planos Salvos
+              </button>
+
+              <button
+                onClick={() => {
+                  onOpenGuide();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center gap-2 p-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-xs"
+              >
+                <BookOpen className="w-5 h-5 shrink-0" />
+                Referencial
+              </button>
+            </div>
+
+            <div className="h-px bg-white/10 my-2" />
+
+            {/* View Toggle (Only visible when on Plano de Aula) */}
+            {(activeView === 'edit' || activeView === 'report') && (
+              <div className="flex flex-col gap-2 mb-2">
+                <span className="text-[10px] font-bold uppercase text-sky-200 tracking-wider px-1">Visualização</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setActiveView('edit');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-xl font-bold text-xs transition-colors ${
+                      activeView === 'edit' 
+                        ? 'bg-white text-[#005BAC]' 
+                        : 'bg-black/20 text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <FileText className="w-4 h-4 shrink-0" />
+                    Formulário
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveView('report');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`flex items-center justify-center gap-2 p-3 rounded-xl font-bold text-xs transition-colors ${
+                      activeView === 'report' 
+                        ? 'bg-white text-[#005BAC]' 
+                        : 'bg-black/20 text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <Printer className="w-4 h-4 shrink-0" />
+                    Relatório
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Profile & Settings in Mobile */}
+            {currentUser && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between p-3 bg-black/20 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-sky-400 text-[#021631] font-black flex items-center justify-center text-sm shrink-0">
+                      {currentUser.nome.charAt(0)}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-white text-sm">{currentUser.nome}</span>
+                      <span className="text-[10px] text-sky-200 uppercase font-medium">
+                        {currentUser.role === 'formador'
+                          ? (currentUser.unidadeCiseb ? currentUser.unidadeCiseb.replace('CISEB EE ', '') : 'Formador(a)')
+                          : 'Equipe CISEB'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {onToggleTheme && (
+                    <button
+                      type="button"
+                      onClick={onToggleTheme}
+                      className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                      title="Alternar Tema"
+                    >
+                      {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-300" /> : <Moon className="w-5 h-5 text-sky-200" />}
+                    </button>
+                  )}
+                </div>
+
+                {onOpenUnitModal && (
+                  <button
+                    onClick={() => {
+                      onOpenUnitModal();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 p-3 text-left font-bold text-xs text-white hover:bg-white/10 rounded-xl"
+                  >
+                    <Building2 className="w-5 h-5 text-emerald-300 shrink-0" />
+                    Minha Unidade CISEB
+                  </button>
+                )}
+
+                <button
+                  onClick={handleOpenSupport}
+                  className="flex items-center gap-3 p-3 text-left font-bold text-xs text-white hover:bg-white/10 rounded-xl"
+                >
+                  <Headphones className="w-5 h-5 text-sky-300 shrink-0" />
+                  Suporte Técnico
+                </button>
+
+                {currentUser.role === 'monitoramento' && (
+                  <button
+                    onClick={() => {
+                      setActiveView('admin');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 p-3 text-left font-bold text-xs text-purple-200 hover:bg-white/10 rounded-xl"
+                  >
+                    <ShieldCheck className="w-5 h-5 shrink-0" />
+                    Administração CISEB
+                  </button>
+                )}
+
+                {onLogout && (
+                  <button
+                    onClick={() => {
+                      onLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 p-3 text-left font-bold text-xs text-red-300 hover:bg-white/10 rounded-xl mt-2"
+                  >
+                    <LogOut className="w-5 h-5 shrink-0" />
+                    Sair do Sistema
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </header>
   );
 };

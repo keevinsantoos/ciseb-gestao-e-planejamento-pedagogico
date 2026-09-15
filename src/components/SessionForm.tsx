@@ -325,7 +325,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         }`}
       >
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 min-h-[44px]">
             <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[#005BAC] dark:text-sky-400 flex items-center justify-center font-bold text-xs shrink-0 border border-blue-100 dark:border-blue-900/50">
               1
             </div>
@@ -352,7 +352,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
               <span>1. Modalidade de Atendimento *</span>
             </label>
             <PopoverRoot>
-              <PopoverTrigger className="rounded-lg p-2.5 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-[#005BAC]">
+              <PopoverTrigger className="rounded-lg p-2.5 min-h-[44px] text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-[#005BAC]">
                 <Layers className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 shrink-0" />
                 <span className="truncate">{plan.modalidade || 'Selecione a modalidade...'}</span>
               </PopoverTrigger>
@@ -385,7 +385,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                 type="text"
                 readOnly
                 value={plan.unidadeCiseb || currentUser?.unidadeCiseb || 'Unidade CISEB'}
-                className="w-full p-2.5 pl-8 pr-3 bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 select-none cursor-default focus:outline-none"
+                className="w-full p-2.5 min-h-[44px] pl-8 pr-3 bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 select-none cursor-default focus:outline-none"
                 title="Unidade vinculada automaticamente à sua conta de acesso"
               />
               <Building2 className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 absolute left-2.5 top-3" />
@@ -403,7 +403,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                 type="text"
                 readOnly
                 value={plan.professorFormador || currentUser?.nome || 'Professor(a) Formador(a)'}
-                className="w-full p-2.5 pl-8 pr-3 bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 select-none cursor-default focus:outline-none"
+                className="w-full p-2.5 min-h-[44px] pl-8 pr-3 bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-200 select-none cursor-default focus:outline-none"
                 title="Formador(a) autenticado(a) na sessão ativa"
               />
               <UserCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2.5 top-3" />
@@ -436,7 +436,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         }`}
       >
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 min-h-[44px]">
             <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[#005BAC] dark:text-sky-400 flex items-center justify-center font-bold text-xs shrink-0 border border-blue-100 dark:border-blue-900/50">
               2
             </div>
@@ -463,7 +463,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
               4. Tema de Imersão *
             </label>
             <PopoverRoot>
-              <PopoverTrigger className="rounded-lg p-2.5 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-[#005BAC]">
+              <PopoverTrigger className="rounded-lg p-2.5 min-h-[44px] text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-[#005BAC]">
                 <BookMarked className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 shrink-0" />
                 <span className="truncate">{plan.temaImersao || 'Selecione tema...'}</span>
               </PopoverTrigger>
@@ -495,7 +495,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
               placeholder="Ex: Irrigação com Arduino..."
               value={plan.tituloSuporte}
               onChange={(e) => handleChange('tituloSuporte', e.target.value)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005BAC] focus:border-[#005BAC] transition-all"
+              className="w-full p-2.5 min-h-[44px] bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005BAC] focus:border-[#005BAC] transition-all"
             />
           </div>
 
@@ -510,7 +510,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                 placeholder="Ex: 04 Horas-Aula..."
                 value={plan.cargaHorariaAulas}
                 onChange={(e) => handleChange('cargaHorariaAulas', e.target.value)}
-                className="w-full p-2.5 pl-8 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005BAC] focus:border-[#005BAC] transition-all"
+                className="w-full p-2.5 min-h-[44px] pl-8 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005BAC] focus:border-[#005BAC] transition-all"
               />
               <Clock className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3" />
             </div>
@@ -522,7 +522,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
               Turma / Público *
             </label>
             <PopoverRoot>
-              <PopoverTrigger className="rounded-lg p-2.5 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-[#005BAC]">
+              <PopoverTrigger className="rounded-lg p-2.5 min-h-[44px] text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-[#005BAC]">
                 <GraduationCap className="w-3.5 h-3.5 text-[#005BAC] dark:text-sky-400 shrink-0" />
                 <span className="truncate">{plan.turmaParticipante || 'Selecione turma...'}</span>
               </PopoverTrigger>
@@ -578,7 +578,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         }`}
       >
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 min-h-[44px]">
             <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[#005BAC] dark:text-sky-400 flex items-center justify-center font-bold text-xs shrink-0 border border-blue-100 dark:border-blue-900/50">
               3
             </div>
@@ -604,7 +604,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-2">
               Competências BNCC Computação
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 min-h-[44px]">
               {BNCC_COMPETENCIAS_OPTIONS.map((comp) => {
                 const isSelected = (plan.bnccCompetencias || []).includes(comp);
                 return (
@@ -612,7 +612,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                     key={comp}
                     type="button"
                     onClick={() => handleToggleArrayItem('bnccCompetencias', comp)}
-                    className={`p-3 rounded-xl border text-xs font-medium text-left transition-all flex items-start gap-2.5 cursor-pointer ${
+                    className={`p-3 rounded-xl border text-xs font-medium text-left transition-all flex items-start gap-2.5 min-h-[44px] cursor-pointer ${
                       isSelected
                         ? 'bg-[#005BAC] text-white border-[#005BAC] shadow-xs'
                         : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100/80 dark:hover:bg-slate-800'
@@ -639,7 +639,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-2">
               Eixo de Habilidade BNCC Computação
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 min-h-[44px]">
               {BNCC_EIXOS_HABILIDADES_OPTIONS.map((eixo) => {
                 const isSelected = (plan.bnccHabilidadesEixo || []).includes(eixo);
                 return (
@@ -647,7 +647,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                     key={eixo}
                     type="button"
                     onClick={() => handleToggleArrayItem('bnccHabilidadesEixo', eixo)}
-                    className={`p-3 rounded-xl border text-xs font-medium text-left transition-all flex items-start gap-2.5 cursor-pointer ${
+                    className={`p-3 rounded-xl border text-xs font-medium text-left transition-all flex items-start gap-2.5 min-h-[44px] cursor-pointer ${
                       isSelected
                         ? 'bg-[#004e96] text-white border-[#004e96] shadow-xs font-semibold'
                         : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100/80 dark:hover:bg-slate-800'
@@ -687,7 +687,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                       key={ods}
                       type="button"
                       onClick={() => handleToggleArrayItem('odsAplicada', ods)}
-                      className={`w-full p-2.5 rounded-xl border text-xs font-medium text-left transition-all flex items-center gap-2.5 cursor-pointer ${
+                      className={`w-full p-2.5 min-h-[44px] rounded-xl border text-xs font-medium text-left transition-all flex items-center gap-2.5 min-h-[44px] cursor-pointer ${
                         isSelected
                           ? isEnvironmental
                             ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
@@ -730,7 +730,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                       key={trilha}
                       type="button"
                       onClick={() => handleChange('trilhaImersao', trilha)}
-                      className={`w-full p-2.5 rounded-xl border text-xs font-medium text-left transition-all flex items-center gap-2.5 cursor-pointer ${
+                      className={`w-full p-2.5 min-h-[44px] rounded-xl border text-xs font-medium text-left transition-all flex items-center gap-2.5 min-h-[44px] cursor-pointer ${
                         isSelected
                           ? 'bg-[#005BAC] text-white border-[#005BAC] font-semibold shadow-xs'
                           : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100/80 dark:hover:bg-slate-800'
@@ -787,7 +787,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         }`}
       >
         <div className="flex flex-wrap items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 gap-2">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 min-h-[44px]">
             <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[#005BAC] dark:text-sky-400 flex items-center justify-center font-bold text-xs shrink-0 border border-blue-100 dark:border-blue-900/50">
               4
             </div>
@@ -887,7 +887,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                 placeholder="Levantamento de dados, contextualização do problema e investigação de dores da comunidade..."
                 value={plan.fase1Empatia}
                 onChange={(e) => handleChange('fase1Empatia', e.target.value)}
-                className="w-full h-full min-h-[110px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 leading-relaxed focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400"
+                className="w-full h-full min-h-[110px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 min-h-[44px] text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 leading-relaxed focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400"
               />
             </div>
           </div>
@@ -909,7 +909,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                 placeholder="Brainstorming, definição de componentes, seleção de soluções e refinamento de hipóteses..."
                 value={plan.fase2TempestadeIdeias}
                 onChange={(e) => handleChange('fase2TempestadeIdeias', e.target.value)}
-                className="w-full h-full min-h-[110px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
+                className="w-full h-full min-h-[110px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 min-h-[44px] text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 leading-relaxed focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
               />
             </div>
           </div>
@@ -931,7 +931,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
                 placeholder="Montagem física/digital, circuitos eletrônicos, lógica em blocos e teste prático da solução..."
                 value={plan.fase3PrototipagemSolucao}
                 onChange={(e) => handleChange('fase3PrototipagemSolucao', e.target.value)}
-                className="w-full h-full min-h-[110px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
+                className="w-full h-full min-h-[110px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 min-h-[44px] text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
               />
             </div>
           </div>
@@ -970,7 +970,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
         }`}
       >
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 min-h-[44px]">
             <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[#005BAC] dark:text-sky-400 flex items-center justify-center font-bold text-xs shrink-0 border border-blue-100 dark:border-blue-900/50">
               5
             </div>
@@ -996,7 +996,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-2">
               Tipo de Produto / Protótipo
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 min-h-[44px]">
               {TIPO_PROTOTIPO_OPTIONS.map((tipo) => {
                 const isSelected = plan.tipoPrototipo === tipo;
                 return (
@@ -1027,7 +1027,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
               placeholder="Ex: Arduino, Sensor HL-69, Jumper Wires, Chromebooks, Protoboard..."
               value={plan.recursosDidaticosTecnologicos}
               onChange={(e) => handleChange('recursosDidaticosTecnologicos', e.target.value)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005BAC] focus:border-[#005BAC]"
+              className="w-full p-2.5 min-h-[44px] bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005BAC] focus:border-[#005BAC]"
             />
           </div>
 
@@ -1041,7 +1041,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
               placeholder="1. Introdução à eletrônica; 2. Diagramação do circuito; 3. Lógica condicional; 4. Teste em campo real..."
               value={plan.roteiroPedagógico}
               onChange={(e) => handleChange('roteiroPedagógico', e.target.value)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#005BAC] focus:border-[#005BAC]"
+              className="w-full p-2.5 min-h-[44px] bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#005BAC] focus:border-[#005BAC]"
             />
           </div>
 
@@ -1055,7 +1055,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
               placeholder="Compreender o funcionamento de sensores e atuar na lógica de programação para sustentabilidade..."
               value={plan.expectativaAprendizagem}
               onChange={(e) => handleChange('expectativaAprendizagem', e.target.value)}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#005BAC] focus:border-[#005BAC]"
+              className="w-full p-2.5 min-h-[44px] bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#005BAC] focus:border-[#005BAC]"
             />
           </div>
         </div>
@@ -1071,7 +1071,7 @@ export const SessionForm: React.FC<SessionFormProps> = ({
             <span>Voltar para Design Thinking</span>
           </button>
 
-          <div className="w-full sm:w-auto flex items-center gap-2.5">
+          <div className="w-full sm:w-auto flex items-center gap-2.5 min-h-[44px]">
             <button
               type="button"
               onClick={onSave}

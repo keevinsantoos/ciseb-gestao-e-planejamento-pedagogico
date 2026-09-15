@@ -217,7 +217,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                       {/* Topo / Logo CISEB Adaptável */}
                       <div className="flex items-center justify-start mb-4 sm:mb-6">
                         <CisebLogo
-                          className="w-auto h-10 sm:h-12 md:h-14 lg:h-16 max-w-[min(260px,75%)] object-contain transition-transform shrink-0"
+                          className="w-auto h-14 sm:h-16 md:h-20 lg:h-24 max-w-[min(300px,85%)] object-contain transition-transform shrink-0"
                           variant={theme === 'dark' ? 'light' : 'dark'}
                         />
                       </div>
